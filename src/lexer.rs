@@ -278,10 +278,6 @@ mod lexer_tests {
                 literal: ";".to_string(),
             },
             Token {
-                token_type: TokenType::Eof,
-                literal: "".to_string(),
-            },
-            Token {
                 token_type: TokenType::Bang,
                 literal: "!".to_string(),
             },
@@ -324,6 +320,14 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::Int,
                 literal: "5".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::Eof,
+                literal: "".to_string(),
             },
         ];
 
