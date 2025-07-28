@@ -5,8 +5,17 @@ pub enum TokenType {
 
     Ident,
     Int,
+
+    // operator
     Assign,
     Plus,
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
+
+    Lt,
+    Gt,
 
     Comma,
     Semicolon,
@@ -16,6 +25,7 @@ pub enum TokenType {
     Lbrace,
     Rbrace,
 
+    // key words
     Function,
     Let,
 }

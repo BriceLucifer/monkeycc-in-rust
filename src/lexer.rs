@@ -122,6 +122,8 @@ mod lexer_tests {
                 x + y;
             };
             let result = add(five, ten);
+            !-/*5;
+            5 < 10 > 5;
             ";
 
         let tests = vec![
@@ -272,6 +274,10 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::Eof,
                 literal: "".to_string(),
+            },
+            Token {
+                token_type: TokenType::Bang,
+                literal: "!".to_string(),
             },
         ];
 
