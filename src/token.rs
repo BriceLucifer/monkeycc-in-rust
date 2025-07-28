@@ -28,6 +28,11 @@ pub enum TokenType {
     // key words
     Function,
     Let,
+    If,
+    Return,
+    Else,
+    True,
+    False,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +60,11 @@ pub fn lookup_ident(ident: String) -> TokenType {
     match ident.as_str() {
         "fn" => return TokenType::Function,
         "let" => return TokenType::Let,
+        "if" => return TokenType::If,
+        "else" => return TokenType::Else,
+        "return" => return TokenType::Return,
+        "true" => return TokenType::True,
+        "false" => return TokenType::False,
         _ => return TokenType::Ident,
     }
 }
