@@ -55,7 +55,14 @@ impl Lexer {
                 token.literal = "".to_string();
                 token.token_type = TokenType::Eof;
             }
-            _ => {}
+            _ => {
+                if is_letter(ch as u8) {
+                    token.literal = self.read_identifier();
+                    return token;
+                } else {
+                    token = Token::new(TokenType::Illegal, self.ch as char)
+                }
+            }
         }
         self.read_char();
         return token;
@@ -67,6 +74,7 @@ impl Lexer {
             self.read_char();
         }
         if let Some(x) = self.input.as_bytes().get(position..self.position) {
+            // 从&[u8] -> String 需要增加error处理
             return std::str::from_utf8(x).unwrap().to_string();
         } else {
             return String::new();
