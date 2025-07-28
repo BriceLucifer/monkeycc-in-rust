@@ -51,6 +51,12 @@ impl Lexer {
             '}' => token = Token::new(TokenType::Rbrace, self.ch as char),
             ',' => token = Token::new(TokenType::Comma, self.ch as char),
             '+' => token = Token::new(TokenType::Plus, self.ch as char),
+            '-' => token = Token::new(TokenType::Minus, self.ch as char),
+            '/' => token = Token::new(TokenType::Slash, self.ch as char),
+            '*' => token = Token::new(TokenType::Asterisk, self.ch as char),
+            '<' => token = Token::new(TokenType::Lt, self.ch as char),
+            '>' => token = Token::new(TokenType::Gt, self.ch as char),
+            '!' => token = Token::new(TokenType::Bang, self.ch as char),
             '\0' => {
                 token.literal = "".to_string();
                 token.token_type = TokenType::Eof;
@@ -278,6 +284,46 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::Bang,
                 literal: "!".to_string(),
+            },
+            Token {
+                token_type: TokenType::Minus,
+                literal: "-".to_string(),
+            },
+            Token {
+                token_type: TokenType::Slash,
+                literal: "/".to_string(),
+            },
+            Token {
+                token_type: TokenType::Asterisk,
+                literal: "*".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "5".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "5".to_string(),
+            },
+            Token {
+                token_type: TokenType::Lt,
+                literal: "<".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "10".to_string(),
+            },
+            Token {
+                token_type: TokenType::Gt,
+                literal: ">".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "5".to_string(),
             },
         ];
 
