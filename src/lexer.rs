@@ -1,6 +1,6 @@
 use std::char;
 
-use crate::token::{Token, TokenType};
+use crate::token::{Token, TokenType, lookup_ident};
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
@@ -29,7 +29,7 @@ impl Lexer {
             self.ch = 0;
         } else {
             if let Some(x) = self.input.as_bytes().get(self.read_position) {
-                self.ch = x.clone();
+                self.ch = *x;
             }
         }
         self.position = self.read_position;
@@ -37,27 +37,32 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        // 转换char
-        let ch = self.ch as char;
-        // 默认初始化
-        let mut token = Token::new(TokenType::Eof, ch);
+        // 默认初始化 EOF
+        let mut token = Token::new(TokenType::Eof, '\0');
 
-        match ch {
-            '=' => token = Token::new(TokenType::Assign, ch),
-            ';' => token = Token::new(TokenType::Semicolon, ch),
-            '(' => token = Token::new(TokenType::Lparen, ch),
-            ')' => token = Token::new(TokenType::Rparen, ch),
-            '{' => token = Token::new(TokenType::Lbrace, ch),
-            '}' => token = Token::new(TokenType::Rbrace, ch),
-            ',' => token = Token::new(TokenType::Comma, ch),
-            '+' => token = Token::new(TokenType::Plus, ch),
+        self.skip_whitespace();
+
+        match self.ch as char {
+            '=' => token = Token::new(TokenType::Assign, self.ch as char),
+            ';' => token = Token::new(TokenType::Semicolon, self.ch as char),
+            '(' => token = Token::new(TokenType::Lparen, self.ch as char),
+            ')' => token = Token::new(TokenType::Rparen, self.ch as char),
+            '{' => token = Token::new(TokenType::Lbrace, self.ch as char),
+            '}' => token = Token::new(TokenType::Rbrace, self.ch as char),
+            ',' => token = Token::new(TokenType::Comma, self.ch as char),
+            '+' => token = Token::new(TokenType::Plus, self.ch as char),
             '\0' => {
                 token.literal = "".to_string();
                 token.token_type = TokenType::Eof;
             }
             _ => {
-                if is_letter(ch as u8) {
+                if is_letter(self.ch) {
                     token.literal = self.read_identifier();
+                    token.token_type = lookup_ident(token.literal.clone());
+                    return token;
+                } else if is_digital(self.ch) {
+                    token.token_type = TokenType::Int;
+                    token.literal = self.read_number();
                     return token;
                 } else {
                     token = Token::new(TokenType::Illegal, self.ch as char)
@@ -73,11 +78,24 @@ impl Lexer {
         while is_letter(self.ch) {
             self.read_char();
         }
-        if let Some(x) = self.input.as_bytes().get(position..self.position) {
-            // 从&[u8] -> String 需要增加error处理
-            return std::str::from_utf8(x).unwrap().to_string();
-        } else {
-            return String::new();
+        return self.input.get(position..self.position).unwrap().to_string();
+    }
+
+    pub fn read_number(&mut self) -> String {
+        let position = self.position;
+        while is_digital(self.ch) {
+            self.read_char();
+        }
+        return self.input.get(position..self.position).unwrap().to_string();
+    }
+
+    pub fn skip_whitespace(&mut self) {
+        while self.ch as char == ' '
+            || self.ch as char == '\t'
+            || self.ch as char == '\n'
+            || self.ch as char == '\r'
+        {
+            self.read_char();
         }
     }
 }
@@ -86,6 +104,10 @@ pub fn is_letter(ch: u8) -> bool {
     return 'a' <= ch as char && ch as char <= 'z'
         || 'A' <= ch as char && ch as char <= 'Z'
         || ch as char == '_';
+}
+
+pub fn is_digital(ch: u8) -> bool {
+    return '0' as u8 <= ch && ch <= '9' as u8;
 }
 
 #[cfg(test)]

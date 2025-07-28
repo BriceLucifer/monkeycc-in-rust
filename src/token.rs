@@ -40,3 +40,11 @@ impl PartialEq for Token {
         self.literal == other.literal && self.token_type == other.token_type
     }
 }
+
+pub fn lookup_ident(ident: String) -> TokenType {
+    match ident.as_str() {
+        "fn" => return TokenType::Function,
+        "let" => return TokenType::Let,
+        _ => return TokenType::Ident,
+    }
+}
