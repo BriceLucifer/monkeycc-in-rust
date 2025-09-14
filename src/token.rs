@@ -16,6 +16,8 @@ pub enum TokenType {
 
     Lt,
     Gt,
+    Eq,
+    NotEq,
 
     Comma,
     Semicolon,
@@ -42,10 +44,19 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, literal: char) -> Token {
+    // new function for char
+    pub fn new_with_char(token_type: TokenType, literal: char) -> Token {
         Token {
             token_type: token_type,
             literal: literal.to_string(),
+        }
+    }
+
+    // new function for string
+    pub fn new_with_string(token_type: TokenType, literal: String) -> Token {
+        Token {
+            token_type: token_type,
+            literal: literal,
         }
     }
 }

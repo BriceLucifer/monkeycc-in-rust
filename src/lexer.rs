@@ -36,27 +36,62 @@ impl Lexer {
         self.read_position += 1;
     }
 
+    // 提前读取
+    pub fn peek_char(&mut self) -> u8 {
+        if self.read_position >= self.input.len() {
+            return 0;
+        } else {
+            let mut ch: u8 = 0;
+            if let Some(x) = self.input.as_bytes().get(self.read_position) {
+                ch = *x
+            }
+            return ch;
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         // 默认初始化 EOF
-        let mut token = Token::new(TokenType::Eof, '\0');
+        let mut token = Token::new_with_char(TokenType::Eof, '\0');
 
         self.skip_whitespace();
 
         match self.ch as char {
-            '=' => token = Token::new(TokenType::Assign, self.ch as char),
-            ';' => token = Token::new(TokenType::Semicolon, self.ch as char),
-            '(' => token = Token::new(TokenType::Lparen, self.ch as char),
-            ')' => token = Token::new(TokenType::Rparen, self.ch as char),
-            '{' => token = Token::new(TokenType::Lbrace, self.ch as char),
-            '}' => token = Token::new(TokenType::Rbrace, self.ch as char),
-            ',' => token = Token::new(TokenType::Comma, self.ch as char),
-            '+' => token = Token::new(TokenType::Plus, self.ch as char),
-            '-' => token = Token::new(TokenType::Minus, self.ch as char),
-            '/' => token = Token::new(TokenType::Slash, self.ch as char),
-            '*' => token = Token::new(TokenType::Asterisk, self.ch as char),
-            '<' => token = Token::new(TokenType::Lt, self.ch as char),
-            '>' => token = Token::new(TokenType::Gt, self.ch as char),
-            '!' => token = Token::new(TokenType::Bang, self.ch as char),
+            '=' => {
+                if self.peek_char() == '=' as u8 {
+                    let ch = self.ch;
+                    self.read_char();
+                    token = Token::new_with_string(
+                        TokenType::Eq,
+                        format!("{}{}", ch as char, self.ch as char),
+                    );
+                } else {
+                    token = Token::new_with_char(TokenType::Assign, self.ch as char);
+                }
+            }
+            ';' => token = Token::new_with_char(TokenType::Semicolon, self.ch as char),
+            '(' => token = Token::new_with_char(TokenType::Lparen, self.ch as char),
+            ')' => token = Token::new_with_char(TokenType::Rparen, self.ch as char),
+            '{' => token = Token::new_with_char(TokenType::Lbrace, self.ch as char),
+            '}' => token = Token::new_with_char(TokenType::Rbrace, self.ch as char),
+            ',' => token = Token::new_with_char(TokenType::Comma, self.ch as char),
+            '+' => token = Token::new_with_char(TokenType::Plus, self.ch as char),
+            '-' => token = Token::new_with_char(TokenType::Minus, self.ch as char),
+            '/' => token = Token::new_with_char(TokenType::Slash, self.ch as char),
+            '*' => token = Token::new_with_char(TokenType::Asterisk, self.ch as char),
+            '<' => token = Token::new_with_char(TokenType::Lt, self.ch as char),
+            '>' => token = Token::new_with_char(TokenType::Gt, self.ch as char),
+            '!' => {
+                if self.peek_char() == '=' as u8 {
+                    let ch = self.ch;
+                    self.read_char();
+                    token = Token::new_with_string(
+                        TokenType::NotEq,
+                        format!("{}{}", ch as char, self.ch as char),
+                    )
+                } else {
+                    token = Token::new_with_char(TokenType::Bang, self.ch as char)
+                }
+            }
             '\0' => {
                 token.literal = "".to_string();
                 token.token_type = TokenType::Eof;
@@ -71,7 +106,7 @@ impl Lexer {
                     token.literal = self.read_number();
                     return token;
                 } else {
-                    token = Token::new(TokenType::Illegal, self.ch as char)
+                    token = Token::new_with_char(TokenType::Illegal, self.ch as char)
                 }
             }
         }
@@ -135,6 +170,9 @@ mod lexer_tests {
             } else {
                 return false;
             }
+
+            10 == 10;
+            10 != 9;
             ";
 
         let tests = vec![
@@ -397,6 +435,38 @@ mod lexer_tests {
             Token {
                 token_type: TokenType::Rbrace,
                 literal: "}".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "10".to_string(),
+            },
+            Token {
+                token_type: TokenType::Eq,
+                literal: "==".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "10".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "10".to_string(),
+            },
+            Token {
+                token_type: TokenType::NotEq,
+                literal: "!=".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "9".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
             },
             Token {
                 token_type: TokenType::Eof,
