@@ -141,14 +141,30 @@ impl Lexer {
     }
 }
 
+// 判断是不是字母
 pub fn is_letter(ch: u8) -> bool {
     return 'a' <= ch as char && ch as char <= 'z'
         || 'A' <= ch as char && ch as char <= 'Z'
         || ch as char == '_';
 }
 
+// 判断是不是数字
 pub fn is_digital(ch: u8) -> bool {
     return '0' as u8 <= ch && ch <= '9' as u8;
+}
+
+// 为lexer 实现迭代器
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let tok = self.next_token();
+        if tok.token_type == TokenType::Eof {
+            None
+        } else {
+            Some(tok)
+        }
+    }
 }
 
 #[cfg(test)]
