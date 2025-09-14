@@ -1,6 +1,11 @@
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+use std::fmt::{self, Display};
+
+use colored::Colorize;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TokenType {
     Illegal,
+    #[default]
     Eof,
 
     Ident,
@@ -37,7 +42,7 @@ pub enum TokenType {
     False,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Token {
     pub token_type: TokenType,
     pub literal: String,
@@ -64,6 +69,27 @@ impl Token {
 impl PartialEq for Token {
     fn eq(&self, other: &Self) -> bool {
         self.literal == other.literal && self.token_type == other.token_type
+    }
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 类型蓝色
+        let type_str = format!("{:?}", self.token_type).blue().bold();
+        // literal 粉紫色
+        let lit_str = self.literal.magenta().bold();
+
+        // ⟮ type ⊢ literal ⟯ （符号本身白色）
+        let s = format!(
+            "{} {} {} {} {}",
+            "⟮".white(),
+            type_str,
+            "⊢".white(),
+            lit_str,
+            "⟯".white()
+        );
+
+        write!(f, "{}", s)
     }
 }
 

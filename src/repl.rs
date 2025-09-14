@@ -30,7 +30,7 @@ pub fn start() {
                 // 词法分析（你的 Lexer 实现了 Iterator）
                 let lexer = Lexer::new(src);
                 for tok in lexer {
-                    println!("{:?}", tok);
+                    println!("{}", tok);
                 }
             }
             Err(e) => {
