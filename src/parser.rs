@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Program, Statement},
+    ast::{Expr, Ident, Program, Statement},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -39,21 +39,71 @@ impl Parser {
         while self.cur_token.token_type != TokenType::Eof {
             let stmt = self.parse_statement();
             match stmt {
-                Some(stmt) => program.statements.push(stmt),
-                None => self.next_token(),
+                Statement::None => {}
+                _ => {
+                    program.statements.push(stmt);
+                }
             }
+            self.next_token();
         }
         return Some(program);
     }
 
-    pub fn parse_statement(&self) -> Option<Statement> {
+    // 解析statement
+    pub fn parse_statement(&mut self) -> Statement {
         match self.cur_token.token_type {
-            TokenType::Let => self.parse_let_statement(),
-            _ => None,
+            TokenType::Let => self.parse_let_statement().unwrap(),
+            _ => Statement::None,
         }
     }
 
-    pub fn parse_let_statement(&self) {}
+    // return 一个Option<Statement> => Statement::Let{name: Ident, value: Expr}
+    pub fn parse_let_statement(&mut self) -> Option<Statement> {
+        // 因为我提前预判到cur_token 是TokenType::Let
+        // 直接就可以peek 是不是ident
+        if !self.expect_peek(TokenType::Ident) {
+            return None;
+        }
+
+        // 开始创建Let Statement
+        let stmt = Statement::Let {
+            name: Ident(self.cur_token.literal.clone()),
+            // skip value expression
+            value: Expr::Default,
+        };
+
+        if !self.expect_peek(TokenType::Assign) {
+            return None;
+        }
+
+        // TODO: we are skipping the value handle
+        // encounter a semicolon
+        while !self.cur_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return Some(stmt);
+    }
+
+    // 辅助函数 查看当前tokentype 是否匹配
+    pub fn cur_token_is(&self, token_type: TokenType) -> bool {
+        return self.cur_token.token_type == token_type;
+    }
+
+    // 辅助函数 查看下一个tokentype 是否匹配
+    pub fn peek_token_is(&self, token_type: TokenType) -> bool {
+        return self.peek_token.token_type == token_type;
+    }
+
+    // 如果接下来的类型是和参数token_type 匹配 滚动下一个next token 然后返回true
+    pub fn expect_peek(&mut self, token_type: TokenType) -> bool {
+        if self.peek_token_is(token_type) {
+            self.next_token();
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -62,6 +112,7 @@ mod parser_tests {
 
     use super::*;
 
+    #[test]
     fn test_let_statements() {
         let input = r#"
             let x = 5;
@@ -70,7 +121,7 @@ mod parser_tests {
         "#;
 
         let l = Lexer::new(input);
-        let p = Parser::new(l);
+        let mut p = Parser::new(l);
 
         let program = p.parse_program();
         match program {
@@ -88,11 +139,8 @@ mod parser_tests {
                     Ident("y".to_string()),
                     Ident("footbar".to_string()),
                 ];
-                for stmt in p.statements {
-                    for tt in tests.iter() {
-                        // statement 中的name 和 tests ident中的Ident 看看对不对
-                        assert!(test_let_statement(stmt.clone(), tt.0.clone()))
-                    }
+                for (stmt, tt) in p.statements.iter().zip(tests.iter()) {
+                    assert!(test_let_statement(stmt.clone(), tt.0.clone()))
                 }
             }
             None => {

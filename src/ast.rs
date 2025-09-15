@@ -17,6 +17,8 @@ pub struct Ident(pub String);
 // expression
 #[derive(Debug, Clone)]
 pub enum Expr {
+    // for current skip expr
+    Default,
     Ident(Ident),
     Integer(i64),
     Float(f64),
