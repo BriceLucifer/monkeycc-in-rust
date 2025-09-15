@@ -166,10 +166,19 @@ impl Parser {
         return Some(Statement::Expression(stmt));
     }
 
+    // 解析 Expression 的案例 但是目前错误处理是 Expr::Default 做占位
     pub fn parse_expression(&mut self, prec: Precedence) -> Expr {
         let left = match self.cur_token.token_type {
+            // 处理Expression 中的 Ident
             TokenType::Ident => Expr::Ident(Ident(self.cur_token.literal.clone())),
-            TokenType::Int => Expr::Integer(self.cur_token.literal.parse::<i64>().unwrap()),
+            // 处理 Expression 中的 Integer
+            TokenType::Int => Expr::Integer(match self.cur_token.literal.parse::<i64>() {
+                Ok(i) => i,
+                Err(e) => {
+                    eprintln!("error parse to integer, {}, set Integer to 0", e);
+                    0
+                }
+            }),
             TokenType::Bang | TokenType::Minus => {
                 let op = self.cur_token.token_type.clone();
                 self.next_token();
@@ -226,6 +235,6 @@ impl Parser {
             "Expected next token to be {:?}, got {:?} instead",
             token_type, self.peek_token.token_type
         );
-        self.errors.push(msg);
+        self.errors().push(msg);
     }
 }

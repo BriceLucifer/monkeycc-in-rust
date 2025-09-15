@@ -138,6 +138,48 @@ mod parser_test {
         }
     }
 
+    #[test]
+    pub fn test_integer_expression() {
+        let input = "5;";
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        // 检查解析器是否有errors
+        check_parser_errors(&p);
+
+        match program {
+            Some(p) => {
+                if p.statements.len() != 1 {
+                    eprintln!(
+                        "program has not enough statements. got = {}",
+                        p.statements.len()
+                    );
+                    return;
+                }
+
+                let stmt = p.statements[0].clone();
+                match stmt {
+                    Statement::Expression(expr) => {
+                        if let Expr::Ident(i) = expr.expression {
+                            assert_eq!("5".to_string(), i.string())
+                        }
+                        eprintln!("Not a Expr::Ident");
+                        return;
+                    }
+                    _ => {
+                        eprintln!("Not Expression statement");
+                        return;
+                    }
+                }
+            }
+            None => {
+                eprintln!("parse_program() error");
+            }
+        }
+    }
+
     // 辅助函数检查是否需要check_parser_errors()
     pub fn check_parser_errors(p: &Parser) {
         let errors = p.errors();
