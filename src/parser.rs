@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Ident, Program, Statement},
+    ast::{Expr, Ident, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -67,12 +67,12 @@ impl Parser {
             // skip error handle later for more
             // TODO: make unwrap() dispear
             TokenType::Let => self.parse_let_statement().unwrap(),
-            // TokenType::Return => self.parse_return_statement().unwrap(),
+            TokenType::Return => self.parse_return_statement().unwrap(),
             _ => Statement::None,
         }
     }
 
-    // return 一个Option<Statement> => Statement::Let{name: Ident, value: Expr}
+    // 解析let statement 一个Option<Statement> => Statement::Let{name: Ident, value: Expr}
     pub fn parse_let_statement(&mut self) -> Option<Statement> {
         // 因为我提前预判到cur_token 是TokenType::Let
         // 直接就可以peek 是不是ident
@@ -95,6 +95,24 @@ impl Parser {
 
         // TODO: we are skipping the value handle
         // encounter a semicolon
+        while !self.cur_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return Some(stmt);
+    }
+
+    // 解析return statement => Statement::Returnt{ReturnStatement}
+    pub fn parse_return_statement(&mut self) -> Option<Statement> {
+        // 因为我已经知道tokenType == TokenType::Return 所以没必要获取literal
+        let stmt = Statement::Return(ReturnStatement {
+            return_value: Expr::Default,
+        });
+
+        // 跳到下一个token  (处理value)
+        self.next_token();
+
+        // TODO: We are skipping the expression until we encounter a semicolon
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
@@ -199,7 +217,10 @@ mod parser_tests {
                 return true;
             }
             Statement::Return(value) => {
-                return true;
+                return false;
+            }
+            Statement::Expression(expression) => {
+                return false;
             }
             Statement::None => {
                 eprintln!("It is not a let Statement");
