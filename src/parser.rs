@@ -5,9 +5,13 @@ use crate::{
 };
 
 pub struct Parser {
+    // lexer
     l: Lexer,
-
+    // error massage collect
+    errors: Vec<String>,
+    // 当前的token
     cur_token: Token,
+    // 下一个预测的token
     peek_token: Token,
 }
 
@@ -16,6 +20,7 @@ impl Parser {
         // 初始化
         let mut p: Parser = Parser {
             l: lexer,
+            errors: Vec::new(),
             cur_token: Token::default(),
             peek_token: Token::default(),
         };
@@ -26,24 +31,31 @@ impl Parser {
         p
     }
 
+    // cur -> peek, peek -> next
     pub fn next_token(&mut self) {
         self.cur_token = self.peek_token.clone();
         self.peek_token = self.l.next_token();
     }
 
+    // 解析程序
     pub fn parse_program(&mut self) -> Option<Program> {
+        // 解析句子 -> 分句子
         let mut program = Program {
             statements: Vec::new(),
         };
 
+        // 分析是不是eof
         while self.cur_token.token_type != TokenType::Eof {
+            // 解析句子
             let stmt = self.parse_statement();
             match stmt {
+                // 占位
                 Statement::None => {}
                 _ => {
                     program.statements.push(stmt);
                 }
             }
+            // 下一个token开始循环
             self.next_token();
         }
         return Some(program);
@@ -52,7 +64,10 @@ impl Parser {
     // 解析statement
     pub fn parse_statement(&mut self) -> Statement {
         match self.cur_token.token_type {
+            // skip error handle later for more
+            // TODO: make unwrap() dispear
             TokenType::Let => self.parse_let_statement().unwrap(),
+            // TokenType::Return => self.parse_return_statement().unwrap(),
             _ => Statement::None,
         }
     }
@@ -72,6 +87,8 @@ impl Parser {
             value: Expr::Default,
         };
 
+        // let x = y;
+        // 确保ident 下一个是assign标志
         if !self.expect_peek(TokenType::Assign) {
             return None;
         }
@@ -101,8 +118,24 @@ impl Parser {
             self.next_token();
             return true;
         } else {
+            self.peek_errors(token_type);
             return false;
         }
+    }
+
+    // errors 辅助函数
+    pub fn errors(&self) -> Vec<String> {
+        return self.errors.clone();
+    }
+
+    // peek error 函数 怕出现peek error 然后添加信息到errors
+    pub fn peek_errors(&mut self, token_type: TokenType) {
+        // 先使用debug
+        let msg = format!(
+            "Expected next token to be {:?}, got {:?} instead",
+            token_type, self.peek_token.token_type
+        );
+        self.errors().push(msg);
     }
 }
 
@@ -124,6 +157,10 @@ mod parser_tests {
         let mut p = Parser::new(l);
 
         let program = p.parse_program();
+
+        // 检查parse 有没有errors
+        check_parser_errors(&p);
+
         match program {
             Some(p) => {
                 // 判断是不是三个let stmt
@@ -139,6 +176,8 @@ mod parser_tests {
                     Ident("y".to_string()),
                     Ident("footbar".to_string()),
                 ];
+
+                // 压缩结构体 依次匹配
                 for (stmt, tt) in p.statements.iter().zip(tests.iter()) {
                     assert!(test_let_statement(stmt.clone(), tt.0.clone()))
                 }
@@ -150,12 +189,16 @@ mod parser_tests {
         }
     }
 
+    // 辅助测试let statement
     pub fn test_let_statement(stmt: Statement, tt: String) -> bool {
         match stmt {
-            Statement::Let { name, value } => {
+            Statement::Let { name, .. } => {
                 if name.0 != tt {
                     return false;
                 }
+                return true;
+            }
+            Statement::Return(value) => {
                 return true;
             }
             Statement::None => {
@@ -163,5 +206,60 @@ mod parser_tests {
                 return false;
             }
         }
+    }
+
+    // test return statement function
+    #[test]
+    pub fn test_return_statements() {
+        let input = r#"
+           return 5;
+           return 10;
+           return 993322;
+        "#;
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program();
+        check_parser_errors(&p);
+
+        match program {
+            Some(p) => {
+                if p.statements.len() != 3 {
+                    eprintln!(
+                        "program.statements does not contain 3 statements, got = {}",
+                        p.statements.len()
+                    );
+                }
+                for stmt in p.statements {
+                    match stmt {
+                        Statement::Return(value) => {}
+                        _ => {
+                            eprintln!("stmt not return statement, got = {:?}", stmt);
+                        }
+                    }
+                }
+            }
+            None => {
+                eprintln!("Error parser_program return None");
+                return;
+            }
+        }
+    }
+
+    // 辅助函数检查是否需要check_parser_errors()
+    pub fn check_parser_errors(p: &Parser) {
+        let errors = p.errors();
+
+        if errors.len() == 0 {
+            return;
+        }
+
+        eprintln!("Parser has {} errors", errors.len());
+        for msg in errors {
+            eprintln!("- parser error: {}", msg)
+        }
+
+        panic!("Fail the check parser errors")
     }
 }
