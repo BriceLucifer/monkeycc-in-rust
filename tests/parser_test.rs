@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod parser_test {
-    use monkeycc::ast::{Ident, Statement};
+    use monkeycc::ast::{Expr, ExpressionStatement, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
 
@@ -106,6 +106,35 @@ mod parser_test {
                 eprintln!("Error parser_program return None");
                 return;
             }
+        }
+    }
+
+    #[test]
+    fn test_identifier_expression() {
+        let input = "footbar;";
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program();
+        match program {
+            Some(p) => {
+                if p.statements.len() != 1 {
+                    eprintln!(
+                        "program has not enough statements. got = {}",
+                        p.statements.len()
+                    );
+                }
+                let stmt = p.statements[0].clone();
+                match stmt {
+                    Statement::Expression(e) => {
+                        assert_eq!("footbar".to_string(), e.expression.string())
+                    }
+                    _ => {
+                        eprintln!("Not a Expression statement")
+                    }
+                }
+            }
+            None => eprintln!("parse_program() returns None"),
         }
     }
 

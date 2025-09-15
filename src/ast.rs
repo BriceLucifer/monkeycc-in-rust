@@ -1,3 +1,5 @@
+use crate::token::TokenType;
+
 // Program struct
 #[derive(Debug, Clone, Default)]
 pub struct Program {
@@ -82,6 +84,17 @@ pub enum Expr {
     Ident(Ident),
     Integer(i64),
     Float(f64),
+    // Prefix expression [ -1 ]
+    Prefix {
+        op: TokenType,
+        right: Box<Expr>,
+    },
+    // Infix expression [ 1 + 1 ]
+    Infix {
+        left: Box<Expr>,
+        op: TokenType,
+        right: Box<Expr>,
+    },
 }
 
 // just in case
@@ -92,6 +105,10 @@ impl Expr {
             Expr::Float(x) => x.to_string(),
             Expr::Ident(i) => i.0.clone(),
             Expr::Integer(it) => it.to_string(),
+            Expr::Prefix { op, right } => format!("{:?} {}", op, right.string()),
+            Expr::Infix { left, op, right } => {
+                format!("{} {:?} {}", left.string(), op, right.string())
+            }
         }
     }
 }

@@ -1,9 +1,37 @@
 use crate::{
-    ast::{Expr, Ident, Program, ReturnStatement, Statement},
+    ast::{Expr, ExpressionStatement, Ident, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::{Token, TokenType},
 };
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub enum Precedence {
+    Lowest = 0,
+    Equals,      // ==
+    LessGreater, // >= or > or < or <=
+    Sum,         // a + b or a - b
+    Product,     // a * b or a / b
+    Prefix,      // !a -a +a
+    Call,        // call(x)
+    Hightest,
+}
+
+// 为每一个token_type 选择合适的Precedence
+impl Precedence {
+    #[inline]
+    pub fn of(token_type: TokenType) -> Precedence {
+        use TokenType::*;
+        match token_type {
+            Eq | NotEq => Precedence::Equals,
+            Lt | Gt => Precedence::LessGreater,
+            Plus | Minus => Precedence::Sum,
+            Slash | Asterisk => Precedence::Product,
+            _ => Precedence::Lowest,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Parser {
     // lexer
     l: Lexer,
@@ -68,7 +96,8 @@ impl Parser {
             // TODO: make unwrap() dispear
             TokenType::Let => self.parse_let_statement().unwrap(),
             TokenType::Return => self.parse_return_statement().unwrap(),
-            _ => Statement::None,
+            // 默认处理表达式
+            _ => self.parse_expression_statement().unwrap(),
         }
     }
 
@@ -120,6 +149,50 @@ impl Parser {
         return Some(stmt);
     }
 
+    // 解析expresion statement => Statement::Expression(ExpressionStatement)
+    pub fn parse_expression_statement(&mut self) -> Option<Statement> {
+        // Expression Statement 其实就是 找infix或者prefix
+        let mut stmt = ExpressionStatement {
+            // 默认初始化
+            expression: Expr::Default,
+        };
+
+        stmt.expression = self.parse_expression(Precedence::Lowest);
+
+        if self.peek_token_is(TokenType::Semicolon) {
+            self.next_token();
+        }
+
+        return Some(Statement::Expression(stmt));
+    }
+
+    pub fn parse_expression(&mut self, prec: Precedence) -> Expr {
+        let left = match self.cur_token.token_type {
+            TokenType::Ident => Expr::Ident(Ident(self.cur_token.literal.clone())),
+            TokenType::Int => Expr::Integer(self.cur_token.literal.parse::<i64>().unwrap()),
+            TokenType::Bang | TokenType::Minus => {
+                let op = self.cur_token.token_type.clone();
+                self.next_token();
+                let right = self.parse_expression(Precedence::Prefix);
+                Expr::Prefix {
+                    op: op,
+                    right: Box::new(right),
+                }
+            }
+            TokenType::Lparen => {
+                self.next_token();
+                let expr = self.parse_expression(prec);
+                if !self.expect_peek(TokenType::Rparen) {
+                    return Expr::Default;
+                }
+                expr
+            }
+            _ => Expr::Default,
+        };
+
+        return left;
+    }
+
     // 辅助函数 查看当前tokentype 是否匹配
     pub fn cur_token_is(&self, token_type: TokenType) -> bool {
         return self.cur_token.token_type == token_type;
@@ -153,6 +226,6 @@ impl Parser {
             "Expected next token to be {:?}, got {:?} instead",
             token_type, self.peek_token.token_type
         );
-        self.errors().push(msg);
+        self.errors.push(msg);
     }
 }
