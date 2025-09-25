@@ -1,4 +1,4 @@
-use std::fmt::{self, Display};
+use std::fmt::{self};
 
 use colored::Colorize;
 
@@ -10,6 +10,7 @@ pub enum TokenType {
 
     Ident,
     Int,
+    Float,
 
     // operator
     Assign,

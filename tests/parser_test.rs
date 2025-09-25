@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod parser_test {
-    use monkeycc::ast::{Expr, ExpressionStatement, Ident, Statement};
+    use monkeycc::ast::{Expr, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
 
@@ -57,16 +57,7 @@ mod parser_test {
                 }
                 return true;
             }
-            Statement::Return(value) => {
-                return false;
-            }
-            Statement::Expression(expression) => {
-                return false;
-            }
-            Statement::None => {
-                eprintln!("It is not a let Statement");
-                return false;
-            }
+            _ => return false,
         }
     }
 
@@ -95,7 +86,9 @@ mod parser_test {
                 }
                 for stmt in p.statements {
                     match stmt {
-                        Statement::Return(value) => {}
+                        Statement::Return(value) => {
+                            // assert_eq!("5".to_string(), value.string())
+                        }
                         _ => {
                             eprintln!("stmt not return statement, got = {:?}", stmt);
                         }
@@ -109,6 +102,7 @@ mod parser_test {
         }
     }
 
+    // just for test ident
     #[test]
     fn test_identifier_expression() {
         let input = "footbar;";
@@ -138,6 +132,7 @@ mod parser_test {
         }
     }
 
+    // test for integer value
     #[test]
     pub fn test_integer_expression() {
         let input = "5;";
@@ -152,30 +147,89 @@ mod parser_test {
         match program {
             Some(p) => {
                 if p.statements.len() != 1 {
-                    eprintln!(
+                    panic!(
                         "program has not enough statements. got = {}",
                         p.statements.len()
                     );
-                    return;
                 }
 
                 let stmt = p.statements[0].clone();
                 match stmt {
                     Statement::Expression(expr) => {
-                        if let Expr::Ident(i) = expr.expression {
-                            assert_eq!("5".to_string(), i.string())
+                        if let Expr::Integer(i) = expr.expression {
+                            assert_eq!(5, i);
                         }
-                        eprintln!("Not a Expr::Ident");
-                        return;
                     }
                     _ => {
-                        eprintln!("Not Expression statement");
-                        return;
+                        panic!("Not Expression statement");
                     }
                 }
             }
             None => {
-                eprintln!("parse_program() error");
+                panic!("parse_program() error");
+            }
+        }
+    }
+
+    // test expression
+    #[test]
+    pub fn test_prefix_expression() {
+        struct Tprefix {
+            // 输入
+            pub input: String,
+            // 前置测试
+            pub prefix: Expr,
+        }
+        let prefix_test: Vec<Tprefix> = vec![
+            Tprefix {
+                input: "!5".to_string(),
+                prefix: Expr::Prefix {
+                    op: monkeycc::token::TokenType::Bang,
+                    right: Box::new(Expr::Integer(5)),
+                },
+            },
+            Tprefix {
+                input: "-15".to_string(),
+                prefix: Expr::Prefix {
+                    op: monkeycc::token::TokenType::Minus,
+                    right: Box::new(Expr::Integer(15)),
+                },
+            },
+        ];
+
+        for t in prefix_test {
+            let l = Lexer::new(&t.input);
+            let mut p = Parser::new(l);
+
+            let programs = p.parse_program();
+            match programs {
+                Some(program) => {
+                    check_parser_errors(&p);
+
+                    if program.statements.len() != 1 {
+                        eprintln!(
+                            "program.statements does not contain 1 statements, got {} instead",
+                            program.statements.len()
+                        );
+                    }
+
+                    let stmt = program.statements[0].clone();
+                    match stmt {
+                        Statement::Expression(expr_stmt) => {
+                            assert_eq!(expr_stmt.expression.string(), t.prefix.string());
+                        }
+                        other => {
+                            eprintln!(
+                                "program.statements[0] is not a expression, got {} instead",
+                                other.string()
+                            )
+                        }
+                    }
+                }
+                None => {
+                    eprintln!("Error parse_program()");
+                    return;
+                }
             }
         }
     }

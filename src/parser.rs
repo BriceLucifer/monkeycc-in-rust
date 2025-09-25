@@ -4,8 +4,9 @@ use crate::{
     token::{Token, TokenType},
 };
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Precedence {
+    #[default]
     Lowest = 0,
     Equals,      // ==
     LessGreater, // >= or > or < or <=
@@ -157,6 +158,7 @@ impl Parser {
             expression: Expr::Default,
         };
 
+        // 预先是Lowest优先级
         stmt.expression = self.parse_expression(Precedence::Lowest);
 
         if self.peek_token_is(TokenType::Semicolon) {
@@ -172,6 +174,7 @@ impl Parser {
             // 处理Expression 中的 Ident
             TokenType::Ident => Expr::Ident(Ident(self.cur_token.literal.clone())),
             // 处理 Expression 中的 Integer
+            // 直接逻辑就是 和monkey go不太一样的事情是 我直接parser为Integer
             TokenType::Int => Expr::Integer(match self.cur_token.literal.parse::<i64>() {
                 Ok(i) => i,
                 Err(e) => {
@@ -179,6 +182,7 @@ impl Parser {
                     0
                 }
             }),
+            // 解析Prefix式子用的 ! 和 -
             TokenType::Bang | TokenType::Minus => {
                 let op = self.cur_token.token_type.clone();
                 self.next_token();
@@ -188,6 +192,8 @@ impl Parser {
                     right: Box::new(right),
                 }
             }
+
+            // 处理括号表达式
             TokenType::Lparen => {
                 self.next_token();
                 let expr = self.parse_expression(prec);
@@ -196,6 +202,7 @@ impl Parser {
                 }
                 expr
             }
+            // 默认处理 占位
             _ => Expr::Default,
         };
 
@@ -235,6 +242,6 @@ impl Parser {
             "Expected next token to be {:?}, got {:?} instead",
             token_type, self.peek_token.token_type
         );
-        self.errors().push(msg);
+        self.errors.push(msg);
     }
 }

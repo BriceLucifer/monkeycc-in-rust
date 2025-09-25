@@ -81,8 +81,11 @@ pub enum Expr {
     // for current skip expr
     #[default]
     Default,
+    // Identifier
     Ident(Ident),
+    // Integer type: i64
     Integer(i64),
+    // Float type: f64
     Float(f64),
     // Prefix expression [ -1 ]
     Prefix {
