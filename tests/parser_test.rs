@@ -3,6 +3,7 @@ mod parser_test {
     use monkeycc::ast::{Expr, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
+    use monkeycc::token::TokenType;
 
     #[test]
     fn test_let_statements() {
@@ -177,26 +178,25 @@ mod parser_test {
         struct Tprefix {
             // 输入
             pub input: String,
-            // 前置测试
-            pub prefix: Expr,
+            // 前置操作符
+            pub op: TokenType,
+            // 操作数
+            pub right: i64,
         }
         let prefix_test: Vec<Tprefix> = vec![
             Tprefix {
                 input: "!5".to_string(),
-                prefix: Expr::Prefix {
-                    op: monkeycc::token::TokenType::Bang,
-                    right: Box::new(Expr::Integer(5)),
-                },
+                op: monkeycc::token::TokenType::Bang,
+                right: 5,
             },
             Tprefix {
                 input: "-15".to_string(),
-                prefix: Expr::Prefix {
-                    op: monkeycc::token::TokenType::Minus,
-                    right: Box::new(Expr::Integer(15)),
-                },
+                op: monkeycc::token::TokenType::Minus,
+                right: 15,
             },
         ];
 
+        // 循环判断
         for t in prefix_test {
             let l = Lexer::new(&t.input);
             let mut p = Parser::new(l);
@@ -206,20 +206,26 @@ mod parser_test {
                 Some(program) => {
                     check_parser_errors(&p);
 
-                    if program.statements.len() != 1 {
-                        eprintln!(
-                            "program.statements does not contain 1 statements, got {} instead",
-                            program.statements.len()
-                        );
-                    }
+                    // 断言
+                    assert_eq!(
+                        program.statements.len(),
+                        1,
+                        "want 1 stmt, got {}",
+                        program.statements.len()
+                    );
 
                     let stmt = program.statements[0].clone();
                     match stmt {
                         Statement::Expression(expr_stmt) => {
-                            assert_eq!(expr_stmt.expression.string(), t.prefix.string());
+                            if let Expr::Prefix { op, right } = expr_stmt.expression {
+                                assert_eq!(op, t.op);
+                                if let Expr::Integer(value) = *right {
+                                    assert_eq!(value, t.right)
+                                }
+                            }
                         }
                         other => {
-                            eprintln!(
+                            panic!(
                                 "program.statements[0] is not a expression, got {} instead",
                                 other.string()
                             )
@@ -227,8 +233,7 @@ mod parser_test {
                     }
                 }
                 None => {
-                    eprintln!("Error parse_program()");
-                    return;
+                    panic!("Error parse_program()");
                 }
             }
         }
