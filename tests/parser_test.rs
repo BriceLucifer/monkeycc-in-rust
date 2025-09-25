@@ -187,12 +187,12 @@ mod parser_test {
         // 创建prefix_test 数组
         let prefix_test: Vec<Tprefix> = vec![
             Tprefix {
-                input: "!5".to_string(),
+                input: "!5;".to_string(),
                 op: monkeycc::token::TokenType::Bang,
                 right: 5,
             },
             Tprefix {
-                input: "-15".to_string(),
+                input: "-15;".to_string(),
                 op: monkeycc::token::TokenType::Minus,
                 right: 15,
             },
@@ -237,6 +237,103 @@ mod parser_test {
                 }
                 None => {
                     panic!("Error parse_program()");
+                }
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_infix_expression() {
+        struct Tinfix {
+            input: String,
+            left: i64,
+            op: TokenType,
+            right: i64,
+        }
+
+        let infix_test: Vec<Tinfix> = vec![
+            Tinfix {
+                input: "5 + 5;".to_string(),
+                left: 5,
+                op: TokenType::Plus,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 - 5;".to_string(),
+                left: 5,
+                op: TokenType::Minus,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 * 5;".to_string(),
+                left: 5,
+                op: TokenType::Asterisk,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 / 5;".to_string(),
+                left: 5,
+                op: TokenType::Slash,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 > 5;".to_string(),
+                left: 5,
+                op: TokenType::Gt,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 < 5;".to_string(),
+                left: 5,
+                op: TokenType::Lt,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 == 5;".to_string(),
+                left: 5,
+                op: TokenType::Eq,
+                right: 5,
+            },
+            Tinfix {
+                input: "5 != 5;".to_string(),
+                left: 5,
+                op: TokenType::NotEq,
+                right: 5,
+            },
+        ];
+
+        for t in infix_test {
+            let l = Lexer::new(&t.input);
+            let mut p = Parser::new(l);
+
+            let programs = p.parse_program();
+            match programs {
+                Some(program) => {
+                    assert_eq!(
+                        program.statements.len(),
+                        1,
+                        "want 1 stmt, got {}",
+                        program.statements.len()
+                    );
+
+                    let stmt = program.statements[0].clone();
+                    match stmt {
+                        Statement::Expression(expre) => {
+                            if let Expr::Infix { left, op, right } = expre.expression {
+                                assert_eq!(op, t.op);
+                                if let Expr::Integer(i) = *left {
+                                    assert_eq!(i, t.left)
+                                }
+                                if let Expr::Integer(i) = *right {
+                                    assert_eq!(i, t.right)
+                                }
+                            }
+                        }
+                        _ => panic!("program.statement[0] is not an expression statement"),
+                    }
+                }
+                None => {
+                    panic!("parser_program() error");
                 }
             }
         }

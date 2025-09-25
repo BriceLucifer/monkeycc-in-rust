@@ -175,13 +175,34 @@ impl Parser {
             TokenType::Ident => Expr::Ident(Ident(self.cur_token.literal.clone())),
             // 处理 Expression 中的 Integer
             // 直接逻辑就是 和monkey go不太一样的事情是 我直接parser为Integer
-            TokenType::Int => Expr::Integer(match self.cur_token.literal.parse::<i64>() {
-                Ok(i) => i,
-                Err(e) => {
-                    eprintln!("error parse to integer, {}, set Integer to 0", e);
-                    0
+            TokenType::Int => match self.peek_token.token_type {
+                TokenType::Plus
+                | TokenType::Minus
+                | TokenType::Asterisk
+                | TokenType::Slash
+                | TokenType::Gt
+                | TokenType::Lt
+                | TokenType::Eq
+                | TokenType::NotEq => {
+                    let left = self.cur_token.literal.parse::<i64>().unwrap();
+                    self.next_token();
+                    let op = self.cur_token.token_type.clone();
+                    self.next_token();
+                    let right = self.cur_token.literal.parse::<i64>().unwrap();
+                    Expr::Infix {
+                        left: Box::new(Expr::Integer(left)),
+                        op: op,
+                        right: Box::new(Expr::Integer(right)),
+                    }
                 }
-            }),
+                _ => Expr::Integer(match self.cur_token.literal.parse::<i64>() {
+                    Ok(i) => i,
+                    Err(e) => {
+                        eprintln!("error parse to integer, {}, set Integer to 0", e);
+                        0
+                    }
+                }),
+            },
             // 解析Prefix式子用的 ! 和 -
             TokenType::Bang | TokenType::Minus => {
                 let op = self.cur_token.token_type.clone();
