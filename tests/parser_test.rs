@@ -183,6 +183,8 @@ mod parser_test {
             // 操作数
             pub right: i64,
         }
+
+        // 创建prefix_test 数组
         let prefix_test: Vec<Tprefix> = vec![
             Tprefix {
                 input: "!5".to_string(),
@@ -219,6 +221,7 @@ mod parser_test {
                         Statement::Expression(expr_stmt) => {
                             if let Expr::Prefix { op, right } = expr_stmt.expression {
                                 assert_eq!(op, t.op);
+                                // box 指针解引用
                                 if let Expr::Integer(value) = *right {
                                     assert_eq!(value, t.right)
                                 }
