@@ -251,6 +251,15 @@ impl Parser {
         }
     }
 
+    // 辅助查看cur_token的优先级
+    pub fn cur_precedence(&self) -> Precedence {
+        Precedence::Hightest
+    }
+    // 辅助查看peek_token的优先级
+    pub fn peek_precedence(&self) -> Precedence {
+        Precedence::Hightest
+    }
+
     // errors 辅助函数
     pub fn errors(&self) -> Vec<String> {
         return self.errors.clone();
