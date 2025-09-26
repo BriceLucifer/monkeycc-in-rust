@@ -78,8 +78,30 @@ impl Lexer {
             '-' => token = Token::new_with_char(TokenType::Minus, self.ch as char),
             '/' => token = Token::new_with_char(TokenType::Slash, self.ch as char),
             '*' => token = Token::new_with_char(TokenType::Asterisk, self.ch as char),
-            '<' => token = Token::new_with_char(TokenType::Lt, self.ch as char),
-            '>' => token = Token::new_with_char(TokenType::Gt, self.ch as char),
+            '<' => {
+                if self.peek_char() == '=' as u8 {
+                    let ch = self.ch;
+                    self.read_char();
+                    token = Token::new_with_string(
+                        TokenType::Le,
+                        format!("{}{}", ch as char, self.ch as char),
+                    )
+                } else {
+                    token = Token::new_with_char(TokenType::Lt, self.ch as char)
+                }
+            }
+            '>' => {
+                if self.peek_char() == '=' as u8 {
+                    let ch = self.ch;
+                    self.read_char();
+                    token = Token::new_with_string(
+                        TokenType::Ge,
+                        format!("{}{}", ch as char, self.ch as char),
+                    )
+                } else {
+                    token = Token::new_with_char(TokenType::Gt, self.ch as char)
+                }
+            }
             '!' => {
                 if self.peek_char() == '=' as u8 {
                     let ch = self.ch;

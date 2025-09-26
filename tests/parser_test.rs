@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod parser_test {
+    use std::iter::zip;
+
     use monkeycc::ast::{Expr, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
@@ -69,7 +71,9 @@ mod parser_test {
            return 5;
            return 10;
            return 993322;
+           return 1 + 2;
         "#;
+        let values = vec!["5", "10", "993322", "(1 + 2)"];
 
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
@@ -79,16 +83,16 @@ mod parser_test {
 
         match program {
             Some(p) => {
-                if p.statements.len() != 3 {
+                if p.statements.len() != 4 {
                     eprintln!(
                         "program.statements does not contain 3 statements, got = {}",
                         p.statements.len()
                     );
                 }
-                for stmt in p.statements {
+                for (stmt, val) in zip(p.statements, values) {
                     match stmt {
                         Statement::Return(value) => {
-                            // assert_eq!("5".to_string(), value.string())
+                            // assert_eq!(&value.string(), val);
                         }
                         _ => {
                             eprintln!("stmt not return statement, got = {:?}", stmt);
@@ -335,6 +339,83 @@ mod parser_test {
                 None => {
                     panic!("parser_program() error");
                 }
+            }
+        }
+    }
+
+    #[test]
+    pub fn test_operator_precedence_parsing() {
+        struct Toperator {
+            input: &'static str,
+            expected: &'static str,
+        }
+        let tests = vec![
+            Toperator {
+                input: "-a * b",
+                expected: "((-a) * b)",
+            },
+            Toperator {
+                input: "!-a",
+                expected: "(!(-a))",
+            },
+            Toperator {
+                input: "a + b + c",
+                expected: "((a + b) + c)",
+            },
+            Toperator {
+                input: "a + b - c",
+                expected: "((a + b) - c)",
+            },
+            Toperator {
+                input: "a * b * c",
+                expected: "((a * b) * c)",
+            },
+            Toperator {
+                input: "a * b / c",
+                expected: "((a * b) / c)",
+            },
+            Toperator {
+                input: "a + b / c",
+                expected: "(a + (b / c))",
+            },
+            Toperator {
+                input: "a + b * c + d / e - f",
+                expected: "(((a + (b * c)) + (d / e)) - f)",
+            },
+            Toperator {
+                input: "3 + 4; -5 * 5",
+                expected: "(3 + 4)((-5) * 5)",
+            },
+            Toperator {
+                input: "5 > 4 == 3 < 4",
+                expected: "((5 > 4) == (3 < 4))",
+            },
+            Toperator {
+                input: "5 < 4 != 3 > 4",
+                expected: "((5 < 4) != (3 > 4))",
+            },
+            Toperator {
+                input: "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                expected: "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            },
+            Toperator {
+                input: "3 + 4 * 5 != 3 * 1 + 4 * 5",
+                expected: "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))",
+            },
+        ];
+
+        for tt in tests {
+            let l = Lexer::new(tt.input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program();
+            check_parser_errors(&p);
+
+            match program {
+                Some(p) => {
+                    let actual = p.string();
+                    assert_eq!(&actual, tt.expected)
+                }
+                None => panic!("Error parse_program()"),
             }
         }
     }

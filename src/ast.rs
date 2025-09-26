@@ -98,6 +98,8 @@ pub enum Expr {
         op: TokenType,
         right: Box<Expr>,
     },
+    // boolean
+    Boolean(bool),
 }
 
 // just in case
@@ -108,10 +110,11 @@ impl Expr {
             Expr::Float(x) => x.to_string(),
             Expr::Ident(i) => i.0.clone(),
             Expr::Integer(it) => it.to_string(),
-            Expr::Prefix { op, right } => format!("{:?} {}", op, right.string()),
+            Expr::Prefix { op, right } => format!("({}{})", op, right.string()),
             Expr::Infix { left, op, right } => {
-                format!("{} {:?} {}", left.string(), op, right.string())
+                format!("({} {} {})", left.string(), op, right.string())
             }
+            Expr::Boolean(b) => b.to_string(),
         }
     }
 }

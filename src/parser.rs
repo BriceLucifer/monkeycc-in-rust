@@ -8,13 +8,13 @@ use crate::{
 pub enum Precedence {
     #[default]
     Lowest = 0,
-    Equals,      // ==
+    Equals,      // == !=
     LessGreater, // >= or > or < or <=
     Sum,         // a + b or a - b
     Product,     // a * b or a / b
     Prefix,      // !a -a +a
     Call,        // call(x)
-    Hightest,
+    Highest,
 }
 
 // 为每一个token_type 选择合适的Precedence
@@ -24,9 +24,10 @@ impl Precedence {
         use TokenType::*;
         match token_type {
             Eq | NotEq => Precedence::Equals,
-            Lt | Gt => Precedence::LessGreater,
+            Lt | Gt | Le | Ge => Precedence::LessGreater,
             Plus | Minus => Precedence::Sum,
             Slash | Asterisk => Precedence::Product,
+            Lparen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
@@ -170,41 +171,20 @@ impl Parser {
 
     // 解析 Expression 的案例 但是目前错误处理是 Expr::Default 做占位
     pub fn parse_expression(&mut self, prec: Precedence) -> Expr {
-        let left = match self.cur_token.token_type {
+        let mut left = match self.cur_token.token_type {
             // 处理Expression 中的 Ident
             TokenType::Ident => Expr::Ident(Ident(self.cur_token.literal.clone())),
             // 处理 Expression 中的 Integer
             // 直接逻辑就是 和monkey go不太一样的事情是 我直接parser为Integer
-            TokenType::Int => match self.peek_token.token_type {
-                TokenType::Plus
-                | TokenType::Minus
-                | TokenType::Asterisk
-                | TokenType::Slash
-                | TokenType::Gt
-                | TokenType::Lt
-                | TokenType::Eq
-                | TokenType::NotEq => {
-                    let left = self.cur_token.literal.parse::<i64>().unwrap();
-                    self.next_token();
-                    let op = self.cur_token.token_type.clone();
-                    self.next_token();
-                    let right = self.cur_token.literal.parse::<i64>().unwrap();
-                    Expr::Infix {
-                        left: Box::new(Expr::Integer(left)),
-                        op: op,
-                        right: Box::new(Expr::Integer(right)),
-                    }
+            TokenType::Int => match self.cur_token.literal.parse::<i64>() {
+                Ok(i) => Expr::Integer(i),
+                Err(e) => {
+                    eprintln!("error parse to integer, {}, set Integer to 0", e);
+                    Expr::Integer(0)
                 }
-                _ => Expr::Integer(match self.cur_token.literal.parse::<i64>() {
-                    Ok(i) => i,
-                    Err(e) => {
-                        eprintln!("error parse to integer, {}, set Integer to 0", e);
-                        0
-                    }
-                }),
             },
-            // 解析Prefix式子用的 ! 和 -
-            TokenType::Bang | TokenType::Minus => {
+            // 解析Prefix式子用的 ! 和 - 和 +
+            TokenType::Bang | TokenType::Minus | TokenType::Plus => {
                 let op = self.cur_token.token_type.clone();
                 self.next_token();
                 let right = self.parse_expression(Precedence::Prefix);
@@ -213,21 +193,60 @@ impl Parser {
                     right: Box::new(right),
                 }
             }
-
             // 处理括号表达式
             TokenType::Lparen => {
                 self.next_token();
-                let expr = self.parse_expression(prec);
+                let expr = self.parse_expression(Precedence::Lowest);
                 if !self.expect_peek(TokenType::Rparen) {
                     return Expr::Default;
                 }
                 expr
             }
             // 默认处理 占位
-            _ => Expr::Default,
+            _ => return Expr::Default,
         };
 
+        // 基于优先级的infix折叠循环
+        while !self.peek_token_is(TokenType::Semicolon)
+            && self.peek_token.token_type != TokenType::Eof
+            && prec < self.peek_precedence()
+        {
+            let is_infix = matches!(
+                self.peek_token.token_type,
+                TokenType::Plus
+                    | TokenType::Minus
+                    | TokenType::Asterisk
+                    | TokenType::Slash
+                    | TokenType::Lt
+                    | TokenType::Gt
+                    | TokenType::Le
+                    | TokenType::Ge
+                    | TokenType::Eq
+                    | TokenType::NotEq
+            );
+            if !is_infix {
+                break;
+            }
+            self.next_token();
+            left = self.parse_infix_expression(left);
+        }
+
         return left;
+    }
+
+    // parse infix
+    pub fn parse_infix_expression(&mut self, left: Expr) -> Expr {
+        let precedence = self.cur_precedence();
+        let operator = self.cur_token.token_type;
+        self.next_token();
+        let right = self.parse_expression(precedence);
+        let expression = Expr::Infix {
+            left: Box::new(left),
+            op: operator,
+            right: Box::new(right),
+        };
+
+        expression
     }
 
     // 辅助函数 查看当前tokentype 是否匹配
@@ -253,11 +272,12 @@ impl Parser {
 
     // 辅助查看cur_token的优先级
     pub fn cur_precedence(&self) -> Precedence {
-        Precedence::Hightest
+        Precedence::of(self.cur_token.token_type)
     }
+
     // 辅助查看peek_token的优先级
     pub fn peek_precedence(&self) -> Precedence {
-        Precedence::Hightest
+        Precedence::of(self.peek_token.token_type)
     }
 
     // errors 辅助函数

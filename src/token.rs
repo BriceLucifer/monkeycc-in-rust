@@ -24,6 +24,8 @@ pub enum TokenType {
     Gt,
     Eq,
     NotEq,
+    Ge,
+    Le,
 
     Comma,
     Semicolon,
@@ -41,6 +43,54 @@ pub enum TokenType {
     Else,
     True,
     False,
+}
+
+// 为TokenType 实现fmt方法为了后续
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use TokenType::*;
+        let str = match self {
+            Illegal => "illegal",
+            Eof => "EOF",
+
+            Ident => "ident",
+            Int => "int",
+            Float => "float",
+
+            // operator
+            Assign => "=",
+            Plus => "+",
+            Minus => "-",
+            Bang => "!",
+            Asterisk => "*",
+            Slash => "/",
+
+            Lt => "<",
+            Gt => ">",
+            Eq => "==",
+            NotEq => "!=",
+            Ge => ">=",
+            Le => "<=",
+
+            Comma => ",",
+            Semicolon => ";",
+
+            Lparen => "(",
+            Rparen => ")",
+            Lbrace => "{",
+            Rbrace => "}",
+
+            // key words
+            Function => "fn",
+            Let => "let",
+            If => "if",
+            Return => "return",
+            Else => "else",
+            True => "true",
+            False => "false",
+        };
+        write!(f, "{}", str)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
