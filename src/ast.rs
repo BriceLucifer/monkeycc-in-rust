@@ -24,6 +24,7 @@ pub enum Statement {
     Return(ReturnStatement),
     // Expression Statement
     Expression(ExpressionStatement),
+    Block(BlockStatement),
     None,
 }
 
@@ -35,6 +36,7 @@ impl Statement {
             }
             Statement::Expression(expression) => expression.string(),
             Statement::Return(returnstmt) => returnstmt.string(),
+            Statement::Block(block) => block.string(),
             Statement::None => "None".to_string(),
         }
     }
@@ -100,6 +102,12 @@ pub enum Expr {
     },
     // boolean
     Boolean(bool),
+    // if expression
+    IfExpression {
+        condition: Box<Expr>,
+        consequence: Box<Statement>,
+        alternative: Box<Statement>,
+    },
 }
 
 // just in case
@@ -115,6 +123,38 @@ impl Expr {
                 format!("({} {} {})", left.string(), op, right.string())
             }
             Expr::Boolean(b) => b.to_string(),
+            Expr::IfExpression {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let mut out = format!("if{} {}", condition.string(), consequence.string());
+                // 骚操作
+                if let Statement::None = &**alternative {
+                    return out;
+                }
+
+                // 添加字符
+                out.push_str(&alternative.string());
+                out
+            }
         }
+    }
+}
+
+// BlockStatement结构体
+#[derive(Debug, Clone)]
+pub struct BlockStatement {
+    pub statements: Vec<Statement>,
+}
+
+// 添加string()方法
+impl BlockStatement {
+    pub fn string(&self) -> String {
+        let mut out = String::new();
+        for stmt in &self.statements {
+            out.push_str(&stmt.string());
+        }
+        return out;
     }
 }

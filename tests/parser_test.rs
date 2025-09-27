@@ -2,7 +2,7 @@
 mod parser_test {
     use std::iter::zip;
 
-    use monkeycc::ast::{Expr, Ident, Statement};
+    use monkeycc::ast::{Expr, ExpressionStatement, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
     use monkeycc::token::TokenType;
@@ -205,6 +205,11 @@ mod parser_test {
                 input: "!true".to_string(),
                 op: monkeycc::token::TokenType::Bang,
                 right: true as i64,
+            },
+            Tprefix {
+                input: "!false".to_string(),
+                op: monkeycc::token::TokenType::Bang,
+                right: false as i64,
             },
         ];
 
@@ -477,6 +482,41 @@ mod parser_test {
                     ),
                 }
             }
+        }
+    }
+
+    // test if expression
+    #[test]
+    pub fn test_if_expression() {
+        let input = "if (x < y) { x }";
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        check_parser_errors(&p);
+
+        let program = p.parse_program().unwrap();
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program body does not contain {} statements. got {}",
+            1,
+            program.statements.len()
+        );
+
+        match program.statements[0].clone() {
+            Statement::Expression(expr) => {
+                if let Expr::IfExpression {
+                    condition,
+                    consequence,
+                    alternative,
+                } = expr.expression
+                {
+                    assert_eq!("x < y", &condition.string());
+                    assert_eq!("x", &consequence.string());
+                    assert_eq!("None", &alternative.string())
+                }
+            }
+            _ => panic!("Not a Expression"),
         }
     }
 

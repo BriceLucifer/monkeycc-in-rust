@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, ExpressionStatement, Ident, Program, ReturnStatement, Statement},
+    ast::{BlockStatement, Expr, ExpressionStatement, Ident, Program, ReturnStatement, Statement},
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -204,6 +204,8 @@ impl Parser {
             }
             // 处理boolean
             TokenType::True | TokenType::False => return self.parse_boolean(),
+            // 处理if表达式
+            TokenType::If | TokenType::Else => return Expr::Default,
             // 默认处理 占位
             _ => return Expr::Default,
         };
@@ -238,10 +240,15 @@ impl Parser {
 
     // parse infix
     pub fn parse_infix_expression(&mut self, left: Expr) -> Expr {
+        // 提取优先级
         let precedence = self.cur_precedence();
+        // 获取操作符号
         let operator = self.cur_token.token_type;
+        // 跳转下一个token
         self.next_token();
+        // 右侧符号位置 将优先级带入
         let right = self.parse_expression(precedence);
+        // 获得expression
         let expression = Expr::Infix {
             left: Box::new(left),
             op: operator,
@@ -253,7 +260,51 @@ impl Parser {
 
     // parse boolean
     pub fn parse_boolean(&mut self) -> Expr {
+        // 返回boolean expression
         Expr::Boolean(self.cur_token_is(TokenType::True))
+    }
+
+    // parse if expression
+    pub fn parse_if_expression(&mut self) -> Expr {
+        if !self.expect_peek(TokenType::Lparen) {
+            panic!("need (");
+        }
+
+        self.next_token();
+        let condition = self.parse_expression(Precedence::Lowest);
+
+        if !self.expect_peek(TokenType::Rparen) {
+            panic!("need )")
+        }
+
+        if !self.expect_peek(TokenType::Lbrace) {
+            panic!("need Lbrace");
+        }
+
+        let consequence = self.parse_block_statement();
+        let expression = Expr::IfExpression {
+            condition: Box::new(condition),
+            consequence: Box::new(consequence), // statement::Block(BlockStatements)
+            alternative: Box::new(Statement::None),
+        };
+        return expression;
+    }
+
+    // parse block statement
+    pub fn parse_block_statement(&mut self) -> Statement {
+        let mut statements: Vec<Statement> = Vec::new();
+
+        self.next_token();
+        while !self.cur_token_is(TokenType::Rbrace) && !self.cur_token_is(TokenType::Eof) {
+            let stmt = self.parse_statement();
+            statements.push(stmt);
+
+            self.next_token();
+        }
+
+        return Statement::Block(BlockStatement {
+            statements: statements,
+        });
     }
 
     // 辅助函数 查看当前tokentype 是否匹配
