@@ -26,12 +26,13 @@ mod parser_test {
         match program {
             Some(p) => {
                 // 判断是不是三个let stmt
-                if p.statements.len() != 3 {
-                    eprintln!(
-                        "program.statements does not contain 3 statements. got {}",
-                        p.statements.len()
-                    );
-                }
+                assert_eq!(
+                    3,
+                    p.statements.len(),
+                    "let statements is expected {}, got {}",
+                    3,
+                    p.statements.len()
+                );
                 // 三个Ident x, y, foobar
                 let tests: Vec<Ident> = vec![
                     Ident("x".to_string()),
@@ -107,7 +108,7 @@ mod parser_test {
         }
     }
 
-    // just for test ident
+    // test ident
     #[test]
     fn test_identifier_expression() {
         let input = "footbar;";
@@ -200,6 +201,11 @@ mod parser_test {
                 op: monkeycc::token::TokenType::Minus,
                 right: 15,
             },
+            Tprefix {
+                input: "!true".to_string(),
+                op: monkeycc::token::TokenType::Bang,
+                right: true as i64,
+            },
         ];
 
         // 循环判断
@@ -226,8 +232,18 @@ mod parser_test {
                             if let Expr::Prefix { op, right } = expr_stmt.expression {
                                 assert_eq!(op, t.op);
                                 // box 指针解引用
-                                if let Expr::Integer(value) = *right {
-                                    assert_eq!(value, t.right)
+                                match *right {
+                                    Expr::Boolean(bool) => {
+                                        assert_eq!(
+                                            bool as i64, t.right,
+                                            "expect {}, got {}",
+                                            t.right, bool as i64
+                                        );
+                                    }
+                                    Expr::Integer(int) => {
+                                        assert_eq!(int, t.right, "expect {}, got {}", t.right, int)
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
@@ -402,6 +418,22 @@ mod parser_test {
                 input: "3 + 4 * 5 != 3 * 1 + 4 * 5",
                 expected: "((3 + (4 * 5)) != ((3 * 1) + (4 * 5)))",
             },
+            Toperator {
+                input: "true",
+                expected: "true",
+            },
+            Toperator {
+                input: "false",
+                expected: "false",
+            },
+            Toperator {
+                input: "3 > 5 == false",
+                expected: "((3 > 5) == false)",
+            },
+            Toperator {
+                input: "3 < 5 == true",
+                expected: "((3 < 5) == true)",
+            },
         ];
 
         for tt in tests {
@@ -413,9 +445,37 @@ mod parser_test {
             match program {
                 Some(p) => {
                     let actual = p.string();
-                    assert_eq!(&actual, tt.expected)
+                    assert_eq!(
+                        &actual, tt.expected,
+                        "expected {}, actual got {}",
+                        tt.expected, &actual
+                    )
                 }
                 None => panic!("Error parse_program()"),
+            }
+        }
+    }
+
+    // test boolean
+    #[test]
+    pub fn test_boolean() {
+        let input = "true;false;";
+        let tests = vec![true, false];
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let programs = parser.parse_program().unwrap();
+        assert_eq!(2, programs.statements.len());
+
+        for (stmt, tt) in zip(programs.statements, tests) {
+            if let Statement::Expression(expr) = stmt {
+                match expr.expression {
+                    Expr::Boolean(b) => assert_eq!(b, tt),
+                    _ => panic!(
+                        "not a Expr::Boolean(bool), got {}",
+                        expr.expression.string()
+                    ),
+                }
             }
         }
     }

@@ -202,6 +202,8 @@ impl Parser {
                 }
                 expr
             }
+            // 处理boolean
+            TokenType::True | TokenType::False => return self.parse_boolean(),
             // 默认处理 占位
             _ => return Expr::Default,
         };
@@ -247,6 +249,11 @@ impl Parser {
         };
 
         expression
+    }
+
+    // parse boolean
+    pub fn parse_boolean(&mut self) -> Expr {
+        Expr::Boolean(self.cur_token_is(TokenType::True))
     }
 
     // 辅助函数 查看当前tokentype 是否匹配
