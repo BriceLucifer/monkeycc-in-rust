@@ -81,7 +81,7 @@ impl ExpressionStatement {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub parameters: Vec<Ident>,
-    pub body: Box<BlockStatement>,
+    pub body: Box<Statement>,
 }
 
 impl Function {
@@ -124,7 +124,7 @@ pub enum Expr {
     IfExpression {
         condition: Box<Expr>,
         consequence: Box<Statement>,
-        alternative: Box<Statement>,
+        alternative: Box<Statement>, // 后续需要修改为Option<BlockStatement>
     },
     // fn expression
     Fn(Function),

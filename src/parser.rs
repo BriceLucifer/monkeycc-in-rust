@@ -1,5 +1,8 @@
 use crate::{
-    ast::{BlockStatement, Expr, ExpressionStatement, Ident, Program, ReturnStatement, Statement},
+    ast::{
+        BlockStatement, Expr, ExpressionStatement, Function, Ident, Program, ReturnStatement,
+        Statement,
+    },
     lexer::Lexer,
     token::{Token, TokenType},
 };
@@ -206,6 +209,8 @@ impl Parser {
             TokenType::True | TokenType::False => return self.parse_boolean(),
             // 处理if表达式
             TokenType::If => return self.parse_if_expression(),
+            // 处理Function 函数
+            TokenType::Function => return self.parse_function(),
             // 默认处理 占位
             _ => return Expr::Default,
         };
@@ -302,6 +307,48 @@ impl Parser {
         return expression;
     }
 
+    // parse fn expression
+    pub fn parse_function(&mut self) -> Expr {
+        if !self.expect_peek(TokenType::Lparen) {
+            panic!("expected (");
+        }
+
+        let parameters = self.parse_function_parameters();
+        let body = self.parse_block_statement();
+
+        let func = Expr::Fn(Function {
+            parameters: parameters,
+            body: Box::new(body),
+        });
+        return func;
+    }
+
+    // parse fn parameters (helper function)
+    pub fn parse_function_parameters(&mut self) -> Vec<Ident> {
+        let mut idents: Vec<Ident> = Vec::new();
+
+        if self.peek_token_is(TokenType::Rparen) {
+            self.next_token();
+            return idents;
+        }
+
+        self.next_token();
+        idents.push(Ident(self.cur_token.literal.clone()));
+
+        while self.peek_token_is(TokenType::Comma) {
+            // x_(当前在x), y
+            self.next_token();
+            self.next_token();
+            idents.push(Ident(self.cur_token.literal.clone()));
+        }
+
+        if !self.expect_peek(TokenType::Rparen) {
+            panic!("expected )")
+        }
+
+        return idents;
+    }
+
     // parse block statement
     pub fn parse_block_statement(&mut self) -> Statement {
         let mut statements: Vec<Statement> = Vec::new();
@@ -314,6 +361,7 @@ impl Parser {
                     self.errors
                         .push("failed to parse statement inside block".into());
                 }
+                Statement::Expression(es) if matches!(es.expression, Expr::Default) => {}
                 _ => statements.push(stmt),
             }
 

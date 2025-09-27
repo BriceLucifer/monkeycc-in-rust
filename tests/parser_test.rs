@@ -564,9 +564,9 @@ mod parser_test {
 
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
         check_parser_errors(&p);
 
-        let program = p.parse_program().unwrap();
         assert_eq!(
             1,
             program.statements.len(),
@@ -584,10 +584,10 @@ mod parser_test {
                     );
                     assert_eq!(func.parameters[0].string(), "x".to_string());
                     assert_eq!(func.parameters[1].string(), "y".to_string());
-                    assert_eq!(func.body.statements.len(), 1);
-                    match func.body.statements[0].clone() {
-                        Statement::Expression(expr_body) => {
-                            assert_eq!(expr_body.string(), "x + y".to_string());
+                    match *func.body {
+                        Statement::Block(expr_body) => {
+                            assert_eq!(expr_body.statements.len(), 1);
+                            assert_eq!(expr_body.string(), "(x + y)".to_string());
                         }
                         _ => {
                             panic!("function body stmt is not Statement::Expression(expr_body)");
