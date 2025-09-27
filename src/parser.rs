@@ -205,7 +205,7 @@ impl Parser {
             // 处理boolean
             TokenType::True | TokenType::False => return self.parse_boolean(),
             // 处理if表达式
-            TokenType::If | TokenType::Else => return Expr::Default,
+            TokenType::If => return self.parse_if_expression(),
             // 默认处理 占位
             _ => return Expr::Default,
         };
@@ -266,6 +266,7 @@ impl Parser {
 
     // parse if expression
     pub fn parse_if_expression(&mut self) -> Expr {
+        // cur_token.TokenType == If
         if !self.expect_peek(TokenType::Lparen) {
             panic!("need (");
         }
@@ -273,19 +274,30 @@ impl Parser {
         self.next_token();
         let condition = self.parse_expression(Precedence::Lowest);
 
+        // 别忘了 expect_peek() 会自己滚动一个token
         if !self.expect_peek(TokenType::Rparen) {
             panic!("need )")
         }
 
         if !self.expect_peek(TokenType::Lbrace) {
-            panic!("need Lbrace");
+            panic!("need {{");
         }
 
         let consequence = self.parse_block_statement();
+        let alternative = if self.peek_token_is(TokenType::Else) {
+            self.next_token();
+            if !self.expect_peek(TokenType::Lbrace) {
+                panic!("need {{ after else");
+            }
+            self.parse_block_statement()
+        } else {
+            Statement::None
+        };
+
         let expression = Expr::IfExpression {
             condition: Box::new(condition),
             consequence: Box::new(consequence), // statement::Block(BlockStatements)
-            alternative: Box::new(Statement::None),
+            alternative: Box::new(alternative),
         };
         return expression;
     }
@@ -297,7 +309,13 @@ impl Parser {
         self.next_token();
         while !self.cur_token_is(TokenType::Rbrace) && !self.cur_token_is(TokenType::Eof) {
             let stmt = self.parse_statement();
-            statements.push(stmt);
+            match stmt {
+                Statement::None => {
+                    self.errors
+                        .push("failed to parse statement inside block".into());
+                }
+                _ => statements.push(stmt),
+            }
 
             self.next_token();
         }

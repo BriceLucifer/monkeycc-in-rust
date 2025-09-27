@@ -511,12 +511,49 @@ mod parser_test {
                     alternative,
                 } = expr.expression
                 {
-                    assert_eq!("x < y", &condition.string());
+                    assert_eq!("(x < y)", &condition.string());
                     assert_eq!("x", &consequence.string());
                     assert_eq!("None", &alternative.string())
                 }
             }
             _ => panic!("Not a Expression"),
+        }
+    }
+
+    #[test]
+    pub fn test_if_else_expression() {
+        let input = "if (x < y) { x } else { y }";
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+
+        check_parser_errors(&p);
+        let program = p.parse_program().unwrap();
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "expected 1 statements, got {}",
+            program.statements.len()
+        );
+
+        match program.statements[0].clone() {
+            Statement::Expression(expr_stmt) => match expr_stmt.expression {
+                Expr::IfExpression {
+                    condition,
+                    consequence,
+                    alternative,
+                } => {
+                    assert_eq!("(x < y)", &condition.string());
+                    assert_eq!("x", &consequence.string());
+                    assert_eq!("y", &alternative.string());
+                }
+                _ => {
+                    panic!("Not a if expression")
+                }
+            },
+            _ => {
+                panic!("Not a Expression");
+            }
         }
     }
 
