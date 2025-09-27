@@ -2,7 +2,7 @@
 mod parser_test {
     use std::iter::zip;
 
-    use monkeycc::ast::{Expr, ExpressionStatement, Ident, Statement};
+    use monkeycc::ast::{Expr, Function, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
     use monkeycc::token::TokenType;
@@ -553,6 +553,50 @@ mod parser_test {
             },
             _ => {
                 panic!("Not a Expression");
+            }
+        }
+    }
+
+    // test function literal
+    #[test]
+    pub fn test_fn_literal() {
+        let input = "fn(x, y) {x + y;}";
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        check_parser_errors(&p);
+
+        let program = p.parse_program().unwrap();
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "expected 1 statements, got {}",
+            program.statements.len()
+        );
+        match program.statements[0].clone() {
+            Statement::Expression(expr_stmt) => {
+                if let Expr::Fn(func) = expr_stmt.expression {
+                    assert_eq!(
+                        func.parameters.len(),
+                        2,
+                        "Expected 2 parameters, got {}",
+                        func.parameters.len()
+                    );
+                    assert_eq!(func.parameters[0].string(), "x".to_string());
+                    assert_eq!(func.parameters[1].string(), "y".to_string());
+                    assert_eq!(func.body.statements.len(), 1);
+                    match func.body.statements[0].clone() {
+                        Statement::Expression(expr_body) => {
+                            assert_eq!(expr_body.string(), "x + y".to_string());
+                        }
+                        _ => {
+                            panic!("function body stmt is not Statement::Expression(expr_body)");
+                        }
+                    }
+                }
+            }
+            _ => {
+                panic!("program.statements[0] is not a Statement::Expression");
             }
         }
     }

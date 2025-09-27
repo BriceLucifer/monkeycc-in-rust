@@ -77,6 +77,24 @@ impl ExpressionStatement {
     }
 }
 
+// Function literal expression
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub parameters: Vec<Ident>,
+    pub body: Box<BlockStatement>,
+}
+
+impl Function {
+    pub fn string(&self) -> String {
+        let mut params = Vec::new();
+        for p in self.parameters.iter() {
+            params.push(p.string());
+        }
+
+        format!("fn({}) {}", params.join(", "), self.body.string())
+    }
+}
+
 // expression
 #[derive(Debug, Clone, Default)]
 pub enum Expr {
@@ -108,6 +126,8 @@ pub enum Expr {
         consequence: Box<Statement>,
         alternative: Box<Statement>,
     },
+    // fn expression
+    Fn(Function),
 }
 
 // just in case
@@ -138,6 +158,7 @@ impl Expr {
                 out.push_str(&alternative.string());
                 out
             }
+            Expr::Fn(func) => func.string(),
         }
     }
 }
