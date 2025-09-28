@@ -164,6 +164,7 @@ impl Parser {
             self.next_token();
         }
 
+        // return a Statement
         return Some(Statement::Expression(ExpressionStatement {
             expression: expression,
         }));
@@ -205,11 +206,11 @@ impl Parser {
             // 处理boolean
             TokenType::True | TokenType::False => return self.parse_boolean(),
             // 处理if表达式
-            TokenType::If => return self.parse_if_expression(),
+            TokenType::If => self.parse_if_expression(),
             // 处理Function 函数
-            TokenType::Function => return self.parse_function(),
+            TokenType::Function => self.parse_function(),
             // 默认处理 占位
-            _ => return Expr::Default,
+            _ => Expr::Default,
         };
 
         // 基于优先级的infix折叠循环
@@ -230,13 +231,22 @@ impl Parser {
                     | TokenType::Eq
                     | TokenType::NotEq
             );
+            // 如果下一个tokentype 不是运算符 operator 那就直接break循环
             if !is_infix {
                 break;
             }
+            // 跳转到运算符号
             self.next_token();
+            // 然后找到 parser_infix_expression
+            // 逻辑:
+            //  获取当前运算符的优先级
+            //  获取operator
+            //  然后跳转到变量或者Expr
+            //  解析运算符号
             left = self.parse_infix_expression(left);
         }
 
+        // 返回解析好的infix expression
         return left;
     }
 
@@ -250,7 +260,7 @@ impl Parser {
         self.next_token();
         // 右侧符号位置 将优先级带入
         let right = self.parse_expression(precedence);
-        // 获得expression
+        // 获得infix expression
         let expression = Expr::Infix {
             left: Box::new(left),
             op: operator,
