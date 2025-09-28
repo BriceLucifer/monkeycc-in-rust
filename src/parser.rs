@@ -156,20 +156,17 @@ impl Parser {
 
     // 解析expresion statement => Statement::Expression(ExpressionStatement)
     pub fn parse_expression_statement(&mut self) -> Option<Statement> {
-        // Expression Statement 其实就是 找infix或者prefix
-        let mut stmt = ExpressionStatement {
-            // 默认初始化
-            expression: Expr::Default,
-        };
-
         // 预先是Lowest优先级
-        stmt.expression = self.parse_expression(Precedence::Lowest);
+        let expression = self.parse_expression(Precedence::Lowest);
 
+        // 如果下一个是; 直接跳一个token
         if self.peek_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        return Some(Statement::Expression(stmt));
+        return Some(Statement::Expression(ExpressionStatement {
+            expression: expression,
+        }));
     }
 
     // 解析 Expression 的案例 但是目前错误处理是 Expr::Default 做占位
@@ -284,10 +281,12 @@ impl Parser {
             panic!("need )")
         }
 
+        // 跳转到了{ lbrace
         if !self.expect_peek(TokenType::Lbrace) {
             panic!("need {{");
         }
 
+        // 解析block
         let consequence = self.parse_block_statement();
         let alternative = if self.peek_token_is(TokenType::Else) {
             self.next_token();
@@ -309,13 +308,21 @@ impl Parser {
 
     // parse fn expression
     pub fn parse_function(&mut self) -> Expr {
+        // 先跳转到左括号
         if !self.expect_peek(TokenType::Lparen) {
             panic!("expected (");
         }
 
+        // 然后开始解析 函数参数
         let parameters = self.parse_function_parameters();
+        // 跳转到{
+        if !self.expect_peek(TokenType::Lbrace) {
+            panic!("expected {{ after function parameters");
+        }
+        // 解析函数block
         let body = self.parse_block_statement();
 
+        // 返回解析好的Expr::Fn(func)
         let func = Expr::Fn(Function {
             parameters: parameters,
             body: Box::new(body),
@@ -325,23 +332,32 @@ impl Parser {
 
     // parse fn parameters (helper function)
     pub fn parse_function_parameters(&mut self) -> Vec<Ident> {
+        // 初始化变量Idents 变量保存
         let mut idents: Vec<Ident> = Vec::new();
 
+        // () 参数为0的情况
         if self.peek_token_is(TokenType::Rparen) {
+            // 直接跳转 )
             self.next_token();
+            // 返回空参数
             return idents;
         }
 
+        // 如果 不是参数为0 跳转到第一个参数 差不多x, y 的x位置
         self.next_token();
+        // 计入x 变量
         idents.push(Ident(self.cur_token.literal.clone()));
 
+        // 如果下一个是, 那么跳转
         while self.peek_token_is(TokenType::Comma) {
-            // x_(当前在x), y
+            // x_(当前在x), y, 距离下一个变量总是相差2个身位
             self.next_token();
             self.next_token();
+            // 跳转到了 y
             idents.push(Ident(self.cur_token.literal.clone()));
         }
 
+        // 如果下一个不是) 直接panic 如果是 跳转到了 )
         if !self.expect_peek(TokenType::Rparen) {
             panic!("expected )")
         }
@@ -351,9 +367,13 @@ impl Parser {
 
     // parse block statement
     pub fn parse_block_statement(&mut self) -> Statement {
+        // 初始化语句解析
         let mut statements: Vec<Statement> = Vec::new();
 
+        // 之前有self.next_token() 目前在{ 跳转到了block内部
         self.next_token();
+
+        // 如果{} 为空 那么直接退出
         while !self.cur_token_is(TokenType::Rbrace) && !self.cur_token_is(TokenType::Eof) {
             let stmt = self.parse_statement();
             match stmt {
@@ -361,7 +381,6 @@ impl Parser {
                     self.errors
                         .push("failed to parse statement inside block".into());
                 }
-                Statement::Expression(es) if matches!(es.expression, Expr::Default) => {}
                 _ => statements.push(stmt),
             }
 
