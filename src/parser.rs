@@ -58,6 +58,7 @@ impl Parser {
             peek_token: Token::default(),
         };
 
+        // 跳跃两次 让token建立正确顺序
         p.next_token();
         p.next_token();
 

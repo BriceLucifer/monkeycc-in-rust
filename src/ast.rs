@@ -24,11 +24,14 @@ pub enum Statement {
     Return(ReturnStatement),
     // Expression Statement
     Expression(ExpressionStatement),
+    // Block statement
     Block(BlockStatement),
+    // Statement is None
     None,
 }
 
 impl Statement {
+    // 为statement enum 返回字符串类型
     pub fn string(&self) -> String {
         match self {
             Statement::Let { name, value } => {
@@ -42,7 +45,7 @@ impl Statement {
     }
 }
 
-// Ident: string
+// Ident: string 变量
 #[derive(Debug, Clone, Default)]
 pub struct Ident(pub String);
 
@@ -128,6 +131,11 @@ pub enum Expr {
     },
     // fn expression
     Fn(Function),
+    // call expression
+    Call {
+        function: Box<Expr>,  // Expr::Ident or Expr::Fn
+        arguments: Vec<Expr>, // function arguements
+    },
 }
 
 // just in case
@@ -159,6 +167,18 @@ impl Expr {
                 out
             }
             Expr::Fn(func) => func.string(),
+            Expr::Call {
+                function,
+                arguments,
+            } => {
+                let args = arguments
+                    .iter()
+                    .map(|f| f.string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                let out = format!("{}({})", function.string(), args);
+                out
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 mod parser_test {
     use std::iter::zip;
 
-    use monkeycc::ast::{Expr, Function, Ident, Statement};
+    use monkeycc::ast::{Expr, Ident, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
     use monkeycc::token::TokenType;
@@ -597,6 +597,62 @@ mod parser_test {
             }
             _ => {
                 panic!("program.statements[0] is not a Statement::Expression");
+            }
+        }
+    }
+
+    // 测试函数arguement
+    #[test]
+    pub fn test_fn_parameter_parsing() {
+        pub struct TestP {
+            pub input: &'static str,
+            pub expected: Vec<&'static str>,
+        }
+
+        let tests = vec![
+            TestP {
+                input: "fn() {}",
+                expected: Vec::new(),
+            },
+            TestP {
+                input: "fn(x) {}",
+                expected: vec!["x"],
+            },
+            TestP {
+                input: "fn(x, y) {}",
+                expected: vec!["x", "y"],
+            },
+        ];
+
+        for t in tests {
+            let l = Lexer::new(t.input);
+            let mut p = Parser::new(l);
+            check_parser_errors(&p);
+
+            let program = p.parse_program().unwrap();
+
+            // 确保是一句
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "expected 1 statements, got {}",
+                program.statements.len()
+            );
+
+            let stmt = program.statements[0].clone();
+
+            match stmt {
+                Statement::Expression(e) => {
+                    if let Expr::Fn(func) = e.expression {
+                        assert_eq!(func.parameters.len(), t.expected.len());
+                        for (i, i_t) in zip(func.parameters, t.expected) {
+                            assert_eq!(&i.string(), i_t)
+                        }
+                    }
+                }
+                _ => {
+                    panic!("not a expression")
+                }
             }
         }
     }
