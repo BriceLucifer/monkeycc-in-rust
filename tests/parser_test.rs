@@ -15,6 +15,14 @@ mod parser_test {
             let footbar = 838383;
         "#;
 
+        struct IdentValue(&'static str, &'static str);
+
+        let tests = vec![
+            IdentValue("x", "5"),
+            IdentValue("y", "10"),
+            IdentValue("footbar", "838383"),
+        ];
+
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
 
@@ -33,35 +41,21 @@ mod parser_test {
                     3,
                     p.statements.len()
                 );
-                // 三个Ident x, y, foobar
-                let tests: Vec<Ident> = vec![
-                    Ident("x".to_string()),
-                    Ident("y".to_string()),
-                    Ident("footbar".to_string()),
-                ];
-
-                // 压缩结构体 依次匹配
-                for (stmt, tt) in p.statements.iter().zip(tests.iter()) {
-                    assert!(test_let_statement(stmt.clone(), tt.0.clone()))
+                for (t, i_v) in p.statements.iter().zip(tests.iter()) {
+                    match &t {
+                        &Statement::Let { name, value } => {
+                            assert_eq!(name.string(), i_v.0);
+                            assert_eq!(value.string(), i_v.1);
+                        }
+                        _ => {
+                            panic!("not a Let statement");
+                        }
+                    }
                 }
             }
             None => {
-                eprintln!("parse_program() returned None");
-                return;
+                panic!("parse_program() returned None");
             }
-        }
-    }
-
-    // 辅助测试let statement
-    pub fn test_let_statement(stmt: Statement, tt: String) -> bool {
-        match stmt {
-            Statement::Let { name, .. } => {
-                if name.0 != tt {
-                    return false;
-                }
-                return true;
-            }
-            _ => return false,
         }
     }
 
@@ -93,7 +87,7 @@ mod parser_test {
                 for (stmt, val) in zip(p.statements, values) {
                     match stmt {
                         Statement::Return(value) => {
-                            // assert_eq!(&value.string(), val);
+                            assert_eq!(&value.string(), val);
                         }
                         _ => {
                             eprintln!("stmt not return statement, got = {:?}", stmt);

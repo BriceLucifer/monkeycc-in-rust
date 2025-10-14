@@ -116,11 +116,8 @@ impl Parser {
         }
 
         // 开始创建Let Statement
-        let stmt = Statement::Let {
-            name: Ident(self.cur_token.literal.clone()),
-            // skip value expression
-            value: Expr::Default,
-        };
+        let name = Ident(self.cur_token.literal.clone());
+        // skip value expression
 
         // let x = y;
         // 确保ident 下一个是assign标志
@@ -128,31 +125,36 @@ impl Parser {
             return None;
         }
 
-        // TODO: we are skipping the value handle
+        // = 标志
+        self.next_token();
+        let value = self.parse_expression(Precedence::Lowest);
+
         // encounter a semicolon
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        return Some(stmt);
+        return Some(Statement::Let {
+            name: name,
+            value: value,
+        });
     }
 
     // 解析return statement => Statement::Returnt{ReturnStatement}
     pub fn parse_return_statement(&mut self) -> Option<Statement> {
         // 因为我已经知道tokenType == TokenType::Return 所以没必要获取literal
-        let stmt = Statement::Return(ReturnStatement {
-            return_value: Expr::Default,
-        });
 
         // 跳到下一个token  (处理value)
         self.next_token();
 
-        // TODO: We are skipping the expression until we encounter a semicolon
+        let value = self.parse_expression(Precedence::Lowest);
         while !self.cur_token_is(TokenType::Semicolon) {
             self.next_token();
         }
 
-        return Some(stmt);
+        return Some(Statement::Return(ReturnStatement {
+            return_value: value,
+        }));
     }
 
     // 解析expresion statement => Statement::Expression(ExpressionStatement)
