@@ -1,4 +1,4 @@
-use crate::{evaluator::eval, lexer::Lexer, object::Object, parser::Parser};
+use crate::{evaluator::eval, lexer::Lexer, parser::Parser};
 use std::io::{self, BufRead, Write};
 
 const PROMPT: &str = ">> ";
@@ -47,12 +47,8 @@ pub fn start() {
                 // 打印出来解析后的
                 // println!("{}", program.string())
 
-                let out = eval(program);
-                match out {
-                    Object::None => println!(),
-                    Object::Integer(int) => println!("{}", int),
-                    Object::Boolean(boolean) => println!("{}", boolean),
-                }
+                let evaluated = eval(program);
+                println!("{}", evaluated.inspect())
             }
             Err(e) => {
                 eprintln!("输入错误：{e}");
