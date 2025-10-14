@@ -219,7 +219,7 @@ impl Parser {
             && self.peek_token.token_type != TokenType::Eof
             && prec < self.peek_precedence()
         {
-            let is_infix = matches!(
+            let is_infix_or_call = matches!(
                 self.peek_token.token_type,
                 TokenType::Plus
                     | TokenType::Minus
@@ -231,9 +231,10 @@ impl Parser {
                     | TokenType::Ge
                     | TokenType::Eq
                     | TokenType::NotEq
+                    | TokenType::Lparen
             );
             // 如果下一个tokentype 不是运算符 operator 那就直接break循环
-            if !is_infix {
+            if !is_infix_or_call {
                 break;
             }
             // 跳转到运算符号
@@ -244,11 +245,62 @@ impl Parser {
             //  获取operator
             //  然后跳转到变量或者Expr
             //  解析运算符号
-            left = self.parse_infix_expression(left);
+            if self.cur_token_is(TokenType::Lparen) {
+                left = self.parse_call_expression(left);
+            } else {
+                left = self.parse_infix_expression(left);
+            }
         }
 
         // 返回解析好的infix expression
         return left;
+    }
+
+    // parse call expression
+    pub fn parse_call_expression(&mut self, func: Expr) -> Expr {
+        let arguements = match self.parse_call_arguments() {
+            Some(args) => args,
+            None => panic!("error parsing arguements()"),
+        };
+
+        Expr::Call {
+            function: Box::new(func),
+            arguments: arguements,
+        }
+    }
+
+    // helper function: parser call expression for arguements
+    pub fn parse_call_arguments(&mut self) -> Option<Vec<Expr>> {
+        // 初始化args队列
+        let mut args = Vec::new();
+
+        // 如果下一个是Rparen 直接退出
+        if self.peek_token_is(TokenType::Rparen) {
+            self.next_token();
+            return Some(args);
+        }
+
+        // 如果不是就跳转到第一个参数
+        self.next_token();
+        // 解析参数表达式
+        args.push(self.parse_expression(Precedence::Lowest));
+
+        // 如果下一个是, 说明是多参数 一直到下一个参数不是逗号
+        while self.peek_token_is(TokenType::Comma) {
+            // a, b 从a 跳跃到comma 然后跳跃到b 跳跃两次
+            self.next_token();
+            self.next_token();
+            // 然后解析参数
+            args.push(self.parse_expression(Precedence::Lowest));
+        }
+
+        // 解析完 发现没有右括号
+        if !self.expect_peek(TokenType::Rparen) {
+            return None;
+        }
+
+        // 返回args
+        Some(args)
     }
 
     // parse infix

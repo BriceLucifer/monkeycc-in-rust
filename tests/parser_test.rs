@@ -439,6 +439,18 @@ mod parser_test {
                 input: "3 < 5 == true",
                 expected: "((3 < 5) == true)",
             },
+            Toperator {
+                input: "a + add(b * c) + d",
+                expected: "((a + add((b * c))) + d)",
+            },
+            Toperator {
+                input: "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                expected: "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            },
+            Toperator {
+                input: "add(a+b+c *d /f +g)",
+                expected: "add((((a + b) + ((c * d) / f)) + g))",
+            },
         ];
 
         for tt in tests {
@@ -653,6 +665,46 @@ mod parser_test {
                 _ => {
                     panic!("not a expression")
                 }
+            }
+        }
+    }
+
+    // test call expression
+    #[test]
+    pub fn test_call_expression() {
+        let input = "add(1,2 * 3,4 + 5);";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program().unwrap();
+        check_parser_errors(&parser);
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program statements does not contain {} statements",
+            program.statements.len()
+        );
+
+        match program.statements[0].clone() {
+            Statement::Expression(expr) => match expr.expression {
+                Expr::Call {
+                    function,
+                    arguments,
+                } => {
+                    assert_eq!(function.string(), "add".to_string(),);
+                    assert_eq!(arguments.len(), 3);
+                    assert_eq!(arguments[0].string(), "1".to_string());
+                    assert_eq!(arguments[1].string(), "(2 * 3)".to_string());
+                    assert_eq!(arguments[2].string(), "(4 + 5)".to_string());
+                }
+                _ => {
+                    panic!("expression is not a call expression")
+                }
+            },
+            _ => {
+                panic!("program.statements[0] is not an expression");
             }
         }
     }
