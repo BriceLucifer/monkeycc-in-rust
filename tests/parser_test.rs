@@ -2,7 +2,7 @@
 mod parser_test {
     use std::iter::zip;
 
-    use monkeycc::ast::{Expr, Ident, Statement};
+    use monkeycc::ast::{Expr, Statement};
     use monkeycc::lexer::Lexer;
     use monkeycc::parser::Parser;
     use monkeycc::token::TokenType;

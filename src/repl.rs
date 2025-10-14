@@ -1,4 +1,4 @@
-use crate::lexer::Lexer;
+use crate::{lexer::Lexer, parser::Parser};
 use std::io::{self, BufRead, Write};
 
 const PROMPT: &str = ">> ";
@@ -29,9 +29,23 @@ pub fn start() {
 
                 // 词法分析（你的 Lexer 实现了 Iterator）
                 let lexer = Lexer::new(src);
-                for tok in lexer {
-                    println!("{}", tok);
+                let mut parser = Parser::new(lexer);
+
+                // 解析program
+                let program = if let Some(p) = parser.parse_program() {
+                    p
+                } else {
+                    panic!("error parse program")
+                };
+
+                // 检查是否有语法错误
+                if parser.errors().len() != 0 {
+                    print_parser_errors(&parser.errors());
+                    continue;
                 }
+
+                // 打印出来解析后的
+                println!("{}", program.string())
             }
             Err(e) => {
                 eprintln!("输入错误：{e}");
@@ -45,4 +59,10 @@ pub fn start() {
     }
 
     println!("Bye. Thanks for using it");
+}
+
+fn print_parser_errors(errors: &Vec<String>) {
+    for msg in errors {
+        println!("\t{}\n", msg);
+    }
 }
