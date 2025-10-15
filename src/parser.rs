@@ -68,7 +68,8 @@ impl Parser {
 
     // cur -> peek, peek -> next
     pub fn next_token(&mut self) {
-        self.cur_token = self.peek_token.clone();
+        // std::mem::take 减少clone开销
+        self.cur_token = std::mem::take(&mut self.peek_token);
         self.peek_token = self.l.next_token();
     }
 

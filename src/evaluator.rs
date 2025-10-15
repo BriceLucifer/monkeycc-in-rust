@@ -51,7 +51,6 @@ fn eval_expr(e: &Expr) -> Object {
         }
 
         Expr::Infix { left, op, right } => {
-            println!("{}", op);
             let left = eval_expr(left);
             let right = eval_expr(right);
             eval_infix_expression(op, left, right)
@@ -73,7 +72,6 @@ fn is_truthy(o: &Object) -> bool {
 }
 
 fn eval_infix_expression(op: &TokenType, left: Object, right: Object) -> Object {
-    println!("{}", op);
     match (left, right) {
         (Object::Integer(l), Object::Integer(r)) => match *op {
             // +

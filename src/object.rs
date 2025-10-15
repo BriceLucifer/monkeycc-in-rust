@@ -9,9 +9,10 @@ pub enum ObjectType {
 // different object for evaluation
 #[derive(Debug, Clone, Copy)]
 pub enum Object {
-    Null,          // Null
-    Integer(i64),  // Int
+    Null,         // Null
+    Integer(i64), // Int
     Boolean(bool), // Boolean
+                  // Float(f64),
 }
 
 // the method for Object

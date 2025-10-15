@@ -209,6 +209,15 @@ mod evaluator_test {
         }
     }
 
+    // test if expression
+    #[test]
+    pub fn test_if_else_expressions() {
+        struct Test<T> {
+            input: &'static str,
+            expected: Option<T>,
+        }
+    }
+
     // helper function
     pub fn test_eval(input: &str) -> Object {
         let l = Lexer::new(input);
