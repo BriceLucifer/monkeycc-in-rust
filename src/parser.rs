@@ -131,7 +131,7 @@ impl Parser {
         let value = self.parse_expression(Precedence::Lowest);
 
         // encounter a semicolon
-        while !self.cur_token_is(TokenType::Semicolon) {
+        while !self.cur_token_is(TokenType::Semicolon) && !self.cur_token_is(TokenType::Eof) {
             self.next_token();
         }
 
@@ -147,9 +147,9 @@ impl Parser {
 
         // 跳到下一个token  (处理value)
         self.next_token();
-
         let value = self.parse_expression(Precedence::Lowest);
-        while !self.cur_token_is(TokenType::Semicolon) {
+
+        while !self.cur_token_is(TokenType::Semicolon) && !self.cur_token_is(TokenType::Eof) {
             self.next_token();
         }
 
@@ -203,18 +203,17 @@ impl Parser {
                 self.next_token();
                 let expr = self.parse_expression(Precedence::Lowest);
                 if !self.expect_peek(TokenType::Rparen) {
-                    return Expr::Default;
+                    return Expr::None;
                 }
                 expr
             }
-            // 处理boolean
-            TokenType::True | TokenType::False => return self.parse_boolean(),
+            // 处理boolean #[bug] 不要返回 之前return 了合成直接退出了pratt
+            TokenType::True | TokenType::False => self.parse_boolean(),
             // 处理if表达式
             TokenType::If => self.parse_if_expression(),
             // 处理Function 函数
             TokenType::Function => self.parse_function(),
-            // 默认处理 占位
-            _ => Expr::Default,
+            _ => Expr::None,
         };
 
         // 基于优先级的infix折叠循环
@@ -317,13 +316,11 @@ impl Parser {
         // 右侧符号位置 将优先级带入
         let right = self.parse_expression(precedence);
         // 获得infix expression
-        let expression = Expr::Infix {
+        Expr::Infix {
             left: Box::new(left),
             op: operator,
             right: Box::new(right),
-        };
-
-        expression
+        }
     }
 
     // parse boolean

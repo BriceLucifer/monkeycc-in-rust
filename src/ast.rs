@@ -1,7 +1,7 @@
 use crate::token::TokenType;
 
 // Program struct
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -46,7 +46,7 @@ impl Statement {
 }
 
 // Ident: string 变量
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Ident(pub String);
 
 impl Ident {
@@ -56,7 +56,7 @@ impl Ident {
 }
 
 // Return Statement: Expr
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ReturnStatement {
     pub return_value: Expr,
 }
@@ -69,7 +69,7 @@ impl ReturnStatement {
 }
 
 // Expression Statement: Expr
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ExpressionStatement {
     pub expression: Expr,
 }
@@ -99,11 +99,9 @@ impl Function {
 }
 
 // expression
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub enum Expr {
-    // for current skip expr
-    #[default]
-    Default,
+    None,
     // Identifier
     Ident(Ident),
     // Integer type: i64
@@ -142,7 +140,7 @@ pub enum Expr {
 impl Expr {
     pub fn string(&self) -> String {
         match self {
-            Expr::Default => "Default".to_string(),
+            Expr::None => "none".to_string(),
             Expr::Float(x) => x.to_string(),
             Expr::Ident(i) => i.0.clone(),
             Expr::Integer(it) => it.to_string(),

@@ -47,7 +47,7 @@ pub fn start() {
                 // 打印出来解析后的
                 // println!("{}", program.string())
 
-                let evaluated = eval(program);
+                let evaluated = eval(&program);
                 println!("{}", evaluated.inspect())
             }
             Err(e) => {

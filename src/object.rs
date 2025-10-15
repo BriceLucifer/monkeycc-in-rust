@@ -9,9 +9,9 @@ pub enum ObjectType {
 // different object for evaluation
 #[derive(Debug, Clone, Copy)]
 pub enum Object {
+    Null,          // Null
     Integer(i64),  // Int
     Boolean(bool), // Boolean
-    None,          // Null
 }
 
 // the method for Object
@@ -21,7 +21,7 @@ impl Object {
         match self {
             Object::Integer(..) => ObjectType::Integer,
             Object::Boolean(..) => ObjectType::Boolean,
-            Object::None => ObjectType::Null,
+            Object::Null => ObjectType::Null,
         }
     }
 
@@ -30,7 +30,7 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{}", value),
             Object::Boolean(boolean) => format!("{}", boolean),
-            Object::None => "null".to_string(),
+            Object::Null => "null".to_string(),
         }
     }
 }
