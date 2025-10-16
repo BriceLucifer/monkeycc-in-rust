@@ -212,9 +212,76 @@ mod evaluator_test {
     // test if expression
     #[test]
     pub fn test_if_else_expressions() {
-        struct Test<T> {
+        struct Test {
             input: &'static str,
-            expected: Option<T>,
+            expected: &'static str,
+        }
+
+        let tests = vec![
+            Test {
+                input: "if (true) {10}",
+                expected: "10",
+            },
+            Test {
+                input: "if (false) {10}",
+                expected: "null",
+            },
+            Test {
+                input: "if (1) { 10 }",
+                expected: "10",
+            },
+            Test {
+                input: "if (1 < 2) { 10 }",
+                expected: "10",
+            },
+            Test {
+                input: "if (1 > 2) { 10 }",
+                expected: "null",
+            },
+            Test {
+                input: "if (1 > 2) { 10 } else { 20 }",
+                expected: "20",
+            },
+            Test {
+                input: "if (1 < 2) { 10 } else { 20 }",
+                expected: "10",
+            },
+        ];
+
+        for t in tests {
+            let evaluated = test_eval(t.input);
+            assert_eq!(evaluated.inspect(), t.expected);
+        }
+    }
+
+    #[test]
+    pub fn test_return_statements() {
+        struct Test {
+            input: &'static str,
+            expected: i64,
+        }
+        let tests = vec![
+            Test {
+                input: "return 10;",
+                expected: 10,
+            },
+            Test {
+                input: "return 10; 9;",
+                expected: 10,
+            },
+            Test {
+                input: "return 2 * 5; 9;",
+                expected: 10,
+            },
+            Test {
+                input: "9; return 2 * 5; 9;",
+                expected: 10,
+            },
+        ];
+
+        for t in tests {
+            let evaled = test_eval(t.input);
+            test_integer_object(evaled, t.expected);
         }
     }
 
