@@ -254,6 +254,7 @@ mod evaluator_test {
         }
     }
 
+    // test for return statement
     #[test]
     pub fn test_return_statements() {
         struct Test {
@@ -277,11 +278,77 @@ mod evaluator_test {
                 input: "9; return 2 * 5; 9;",
                 expected: 10,
             },
+            Test {
+                input: r"
+                    if (10 >1) {
+                        if (10 > 1) {
+                            return 10
+                        }
+                        return 1;
+                    }",
+                expected: 10,
+            },
         ];
 
         for t in tests {
             let evaled = test_eval(t.input);
             test_integer_object(evaled, t.expected);
+        }
+    }
+
+    // ===================== error handling =====================
+
+    fn assert_error_contains(input: &str, expected_substr: &str) {
+        let evaluated = test_eval(input);
+        match evaluated {
+            Object::Error(msg) => {
+                assert!(
+                    msg.contains(expected_substr),
+                    "\ninput:\n{}\nexpected error to contain {:?}\nactual: {}\n",
+                    input,
+                    expected_substr,
+                    msg
+                );
+            }
+            other => panic!(
+                "\ninput:\n{}\nexpected Object::Error, got: {:?}\n",
+                input, other
+            ),
+        }
+    }
+
+    #[test]
+    pub fn test_error_handling_contains() {
+        // 对齐你截图里的 Go 用例；用“包含匹配”更稳，不受报错文案细节影响
+        let cases: &[(&str, &str)] = &[
+            // 类型不匹配
+            ("5 + true;", "type mismatch"),
+            ("5 + true; 5;", "type mismatch"),
+            // 前缀错误
+            ("-true", "unknown operator"),
+            // 布尔中缀（你的实现会报 unknown boolean operator 或 type mismatch；这里用更宽松关键字）
+            ("true + false;", "unknown"),
+            ("5; true + false; 5;", "unknown"),
+            // if 分支中的错误
+            ("if (10 > 1) { true + false; }", "unknown"),
+            // 嵌套 if + return，确保错误能从分支内冒泡
+            (
+                r#"
+                if (10 > 1) {
+                    if (10 > 1) {
+                        return true + false;
+                    }
+                    return 1;
+                }
+            "#,
+                "unknown",
+            ),
+            // 额外加一个：除零
+            ("1 / 0;", "division by zero"),
+        ];
+
+        for (input, needle) in cases {
+            assert_error_contains(input, needle);
         }
     }
 
