@@ -124,6 +124,7 @@ impl PartialEq for Token {
 }
 
 impl fmt::Display for Token {
+    // for decoration
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // 类型蓝色
         let type_str = format!("{:?}", self.token_type).blue().bold();

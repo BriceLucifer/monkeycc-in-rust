@@ -261,11 +261,13 @@ impl Parser {
 
     // parse call expression
     pub fn parse_call_expression(&mut self, func: Expr) -> Expr {
+        // 解析arguements
         let arguements = match self.parse_call_arguments() {
             Some(args) => args,
             None => panic!("error parsing arguements()"),
         };
 
+        // return Expr::Call
         Expr::Call {
             function: Box::new(func),
             arguments: arguements,
@@ -451,6 +453,7 @@ impl Parser {
             self.next_token();
         }
 
+        // 返回statements block
         return Statement::Block(BlockStatement {
             statements: statements,
         });

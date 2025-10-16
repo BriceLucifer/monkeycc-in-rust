@@ -164,6 +164,7 @@ impl Lexer {
 }
 
 // 判断是不是字母
+#[inline(always)]
 pub fn is_letter(ch: u8) -> bool {
     return 'a' <= ch as char && ch as char <= 'z'
         || 'A' <= ch as char && ch as char <= 'Z'
@@ -171,6 +172,7 @@ pub fn is_letter(ch: u8) -> bool {
 }
 
 // 判断是不是数字
+#[inline(always)]
 pub fn is_digital(ch: u8) -> bool {
     return '0' as u8 <= ch && ch <= '9' as u8;
 }

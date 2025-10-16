@@ -6,10 +6,12 @@ use crate::{
 
 /* ========== error helpers ========== */
 
+#[inline(always)]
 fn err<S: Into<String>>(msg: S) -> Object {
     Object::Error(msg.into())
 }
 
+#[inline(always)]
 fn is_error(o: &Object) -> bool {
     matches!(o, Object::Error(_))
 }
